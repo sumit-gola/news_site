@@ -69,6 +69,15 @@ class Article extends Model
                     ->withTimestamps();
     }
 
+    /**
+     * Categories this article belongs to.
+     */
+    public function categories(): BelongsToMany
+    {
+        return $this->belongsToMany(Category::class, 'article_category')
+                    ->withTimestamps();
+    }
+
     // ─── Scopes ────────────────────────────────────────────────────────────
 
     public function scopePublished($query)

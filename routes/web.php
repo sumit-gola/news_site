@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\ArticleController;
+use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\MediaController;
 use Illuminate\Support\Facades\Route;
 use Laravel\Fortify\Features;
@@ -60,6 +61,16 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::put('media/{media}', [MediaController::class, 'update'])->name('media.update');
     Route::delete('media/{media}', [MediaController::class, 'destroy'])->name('media.destroy');
     Route::delete('media', [MediaController::class, 'destroyMultiple'])->name('media.bulk-destroy');
+
+    // ── Category Management ──
+    Route::get('categories', [CategoryController::class, 'index'])->name('categories.index');
+    Route::get('categories/create', [CategoryController::class, 'create'])->name('categories.create');
+    Route::post('categories', [CategoryController::class, 'store'])->name('categories.store');
+    Route::get('categories/{category}/edit', [CategoryController::class, 'edit'])->name('categories.edit');
+    Route::put('categories/{category}', [CategoryController::class, 'update'])->name('categories.update');
+    Route::delete('categories/{category}', [CategoryController::class, 'destroy'])->name('categories.destroy');
+    Route::post('categories/reorder', [CategoryController::class, 'reorder'])->name('categories.reorder');
+    Route::get('categories/list', [CategoryController::class, 'list'])->name('categories.list');
 });
 
 // ── Manager Routes (Dashboard) ────────────────────────────────────────────────────
@@ -74,5 +85,8 @@ Route::middleware(['auth', 'verified', 'role:admin,manager,reporter'])->group(fu
 
 // ── Public Article Routes ────────────────────────────────────────────────────────
 Route::get('articles/{article:slug}', [ArticleController::class, 'show'])->name('public.article.show');
+
+// ── Public Category Routes ────────────────────────────────────────────────────────
+Route::get('category/{category:slug}', [CategoryController::class, 'show_public'])->name('public.category.show');
 
 require __DIR__.'/settings.php';
