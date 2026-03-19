@@ -1,10 +1,8 @@
 import { Link, usePage } from '@inertiajs/react';
 import {
     BookOpen,
-    FileText,
     FolderGit2,
     LayoutGrid,
-    Newspaper,
     Settings,
     Shield,
     Users,
@@ -49,7 +47,6 @@ export function AppSidebar() {
     const isManager  = roles.includes('manager');
     const isReporter = roles.includes('reporter');
 
-    // Core nav — visible to all authenticated users
     const mainNavItems: NavItem[] = [
         {
             title: 'Dashboard',
@@ -73,23 +70,13 @@ export function AppSidebar() {
             </SidebarHeader>
 
             <SidebarContent>
-                {/* Main nav */}
                 <NavMain items={mainNavItems} />
 
-                {/* Admin Section */}
-                {isAdmin && (
-                    <AdminNav />
-                )}
+                {isAdmin && <AdminNav />}
 
-                {/* Manager Section */}
-                {(isAdmin || isManager) && (
-                    <ManagerNav />
-                )}
+                {(isAdmin || isManager) && <ManagerNav />}
 
-                {/* Reporter Section */}
-                {(isAdmin || isManager || isReporter) && (
-                    <ReporterNav />
-                )}
+                {(isAdmin || isManager || isReporter) && <ReporterNav />}
             </SidebarContent>
 
             <SidebarFooter>
@@ -104,7 +91,7 @@ function AdminNav() {
     const { url } = usePage();
 
     const items = [
-        { title: 'User Management', href: '/admin/users',  icon: Users  },
+        { title: 'User Management',    href: '/admin/users',  icon: Users  },
         { title: 'Roles & Permissions', href: '/admin/roles', icon: Shield },
     ];
 
@@ -139,7 +126,6 @@ function ManagerNav() {
 
     const items = [
         { title: 'Manager Dashboard', href: '/manager/dashboard', icon: LayoutGrid },
-        { title: 'Articles',          href: '/articles',          icon: Newspaper  },
         { title: 'Categories',        href: '/categories',        icon: BookOpen   },
     ];
 
@@ -174,14 +160,12 @@ function ReporterNav() {
 
     const items = [
         { title: 'Reporter Dashboard', href: '/reporter/dashboard', icon: LayoutGrid },
-        { title: 'My Articles',        href: '/articles',           icon: Newspaper  },
-        { title: 'New Article',        href: '/articles/create',    icon: FileText  },
     ];
 
     return (
         <SidebarGroup className="px-2 py-0">
             <SidebarGroupLabel className="flex items-center gap-1.5 text-xs font-semibold text-green-500 dark:text-green-400">
-                <Newspaper className="size-3" />
+                <LayoutGrid className="size-3" />
                 Reporter
             </SidebarGroupLabel>
             <SidebarMenu>

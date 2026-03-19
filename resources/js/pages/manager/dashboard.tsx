@@ -1,5 +1,5 @@
-import { Head, usePage } from '@inertiajs/react';
-import { BarChart3, FileText, Users } from 'lucide-react';
+import { Head } from '@inertiajs/react';
+import { BarChart3, FolderOpen, ToggleLeft } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import AppLayout from '@/layouts/app-layout';
 import type { BreadcrumbItem } from '@/types';
@@ -8,30 +8,28 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Dashboard', href: '/manager/dashboard' },
 ];
 
-export default function ManagerDashboard() {
-    const { auth } = usePage().props;
+interface Props {
+    stats: {
+        total_categories: number;
+        active_categories: number;
+    };
+}
 
-    const stats = [
+export default function ManagerDashboard({ stats }: Props) {
+    const statCards = [
         {
-            title: 'Pending Articles',
-            value: 12,
-            icon: FileText,
-            color: 'text-yellow-600 dark:text-yellow-400',
-            bgColor: 'bg-yellow-100 dark:bg-yellow-900/30'
-        },
-        {
-            title: 'Published Articles',
-            value: 48,
-            icon: FileText,
-            color: 'text-green-600 dark:text-green-400',
-            bgColor: 'bg-green-100 dark:bg-green-900/30'
-        },
-        {
-            title: 'Reporters',
-            value: 8,
-            icon: Users,
+            title: 'Total Categories',
+            value: stats.total_categories,
+            icon: FolderOpen,
             color: 'text-blue-600 dark:text-blue-400',
-            bgColor: 'bg-blue-100 dark:bg-blue-900/30'
+            bgColor: 'bg-blue-100 dark:bg-blue-900/30',
+        },
+        {
+            title: 'Active Categories',
+            value: stats.active_categories,
+            icon: ToggleLeft,
+            color: 'text-green-600 dark:text-green-400',
+            bgColor: 'bg-green-100 dark:bg-green-900/30',
         },
     ];
 
@@ -39,17 +37,15 @@ export default function ManagerDashboard() {
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Manager Dashboard" />
             <div className="flex flex-1 flex-col gap-6 p-6">
-                {/* Header */}
                 <div>
                     <h1 className="text-2xl font-bold tracking-tight">Manager Dashboard</h1>
                     <p className="text-muted-foreground text-sm">
-                        Manage articles, approve content, and oversee reporters.
+                        Manage categories and oversee content.
                     </p>
                 </div>
 
-                {/* Stats Grid */}
-                <div className="grid gap-4 md:grid-cols-3">
-                    {stats.map((stat) => {
+                <div className="grid gap-4 md:grid-cols-2">
+                    {statCards.map((stat) => {
                         const Icon = stat.icon;
                         return (
                             <Card key={stat.title}>
@@ -61,14 +57,12 @@ export default function ManagerDashboard() {
                                 </CardHeader>
                                 <CardContent>
                                     <div className="text-2xl font-bold">{stat.value}</div>
-                                    <p className="text-muted-foreground text-xs">Active items</p>
                                 </CardContent>
                             </Card>
                         );
                     })}
                 </div>
 
-                {/* Quick Actions */}
                 <Card>
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2">
@@ -78,7 +72,7 @@ export default function ManagerDashboard() {
                     </CardHeader>
                     <CardContent>
                         <p className="text-muted-foreground text-sm">
-                            Use the sidebar to access article management and reporter oversight tools.
+                            Use the sidebar to access category management.
                         </p>
                     </CardContent>
                 </Card>

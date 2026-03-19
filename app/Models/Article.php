@@ -59,17 +59,6 @@ class Article extends Model
     }
 
     /**
-     * Media attached to this article.
-     */
-    public function media(): BelongsToMany
-    {
-        return $this->belongsToMany(Media::class, 'article_media')
-                    ->withPivot('order')
-                    ->orderByPivot('order')
-                    ->withTimestamps();
-    }
-
-    /**
      * Categories this article belongs to.
      */
     public function categories(): BelongsToMany

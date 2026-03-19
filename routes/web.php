@@ -2,10 +2,10 @@
 
 use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\UserController;
-use App\Http\Controllers\ArticleController;
 use App\Http\Controllers\CategoryController;
-use App\Http\Controllers\MediaController;
+use App\Models\Category;
 use Illuminate\Support\Facades\Route;
+use Inertia\Inertia;
 use Laravel\Fortify\Features;
 
 Route::inertia('/', 'welcome', [
@@ -32,35 +32,10 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'verified', 'role:ad
     Route::post('roles', [RoleController::class, 'store'])->name('roles.store');
     Route::put('roles/{role}', [RoleController::class, 'update'])->name('roles.update');
     Route::delete('roles/{role}', [RoleController::class, 'destroy'])->name('roles.destroy');
-
-    // Article publishing (Admin can publish directly)
-    Route::post('articles/{article}/publish', [ArticleController::class, 'publish'])->name('articles.publish');
 });
 
-// ── Authenticated Routes (Reporters, Managers, Admins) ──────────────────────────
+// ── Authenticated Routes ──────────────────────────────────────────────────────
 Route::middleware(['auth', 'verified'])->group(function () {
-
-    // ── Articles CRUD ──
-    Route::get('articles', [ArticleController::class, 'index'])->name('articles.index');
-    Route::get('articles/create', [ArticleController::class, 'create'])->name('articles.create');
-    Route::post('articles', [ArticleController::class, 'store'])->name('articles.store');
-    Route::get('articles/{article}', [ArticleController::class, 'show'])->name('articles.show');
-    Route::get('articles/{article}/edit', [ArticleController::class, 'edit'])->name('articles.edit');
-    Route::put('articles/{article}', [ArticleController::class, 'update'])->name('articles.update');
-    Route::delete('articles/{article}', [ArticleController::class, 'destroy'])->name('articles.destroy');
-
-    // ── Article Workflow ──
-    Route::post('articles/{article}/submit', [ArticleController::class, 'submit'])->name('articles.submit');
-    Route::post('articles/{article}/approve', [ArticleController::class, 'approve'])->name('articles.approve');
-    Route::post('articles/{article}/reject', [ArticleController::class, 'reject'])->name('articles.reject');
-
-    // ── Media Management ──
-    Route::get('media', [MediaController::class, 'index'])->name('media.index');
-    Route::post('media', [MediaController::class, 'store'])->name('media.store');
-    Route::get('media/{media}', [MediaController::class, 'show'])->name('media.show');
-    Route::put('media/{media}', [MediaController::class, 'update'])->name('media.update');
-    Route::delete('media/{media}', [MediaController::class, 'destroy'])->name('media.destroy');
-    Route::delete('media', [MediaController::class, 'destroyMultiple'])->name('media.bulk-destroy');
 
     // ── Category Management ──
     Route::get('categories', [CategoryController::class, 'index'])->name('categories.index');
@@ -73,20 +48,30 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('categories/list', [CategoryController::class, 'list'])->name('categories.list');
 });
 
-// ── Manager Routes (Dashboard) ────────────────────────────────────────────────────
+// ── Manager Dashboard ─────────────────────────────────────────────────────────
 Route::middleware(['auth', 'verified', 'role:admin,manager'])->group(function () {
-    Route::inertia('manager/dashboard', 'manager/Dashboard')->name('manager.dashboard');
+    Route::get('manager/dashboard', function () {
+        return Inertia::render('manager/dashboard', [
+            'stats' => [
+                'total_categories'  => Category::count(),
+                'active_categories' => Category::where('is_active', true)->count(),
+            ],
+        ]);
+    })->name('manager.dashboard');
 });
 
-// ── Reporter Routes (Dashboard) ───────────────────────────────────────────────────
+// ── Reporter Dashboard ────────────────────────────────────────────────────────
 Route::middleware(['auth', 'verified', 'role:admin,manager,reporter'])->group(function () {
-    Route::inertia('reporter/dashboard', 'reporter/Dashboard')->name('reporter.dashboard');
+    Route::get('reporter/dashboard', function () {
+        return Inertia::render('reporter/dashboard', [
+            'stats' => [
+                'total_categories' => Category::where('is_active', true)->count(),
+            ],
+        ]);
+    })->name('reporter.dashboard');
 });
 
-// ── Public Article Routes ────────────────────────────────────────────────────────
-Route::get('articles/{article:slug}', [ArticleController::class, 'show'])->name('public.article.show');
-
-// ── Public Category Routes ────────────────────────────────────────────────────────
+// ── Public Category Routes ────────────────────────────────────────────────────
 Route::get('category/{category:slug}', [CategoryController::class, 'show_public'])->name('public.category.show');
 
 require __DIR__.'/settings.php';
