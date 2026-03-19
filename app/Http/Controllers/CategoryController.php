@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\ActivityLog;
 use App\Models\Category;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
@@ -31,8 +33,13 @@ class CategoryController extends Controller
             ->get();
 
         return Inertia::render('categories/Index', [
-            'categories' => $categories,
+            'categories'      => $categories,
             'include_inactive' => $request->boolean('include_inactive'),
+            'can_manage'      => $request->user()->can('create', Category::class),
+            'flash'           => [
+                'success' => session('success'),
+                'error'   => session('error'),
+            ],
         ]);
     }
 
@@ -64,7 +71,7 @@ class CategoryController extends Controller
     /**
      * Store a new category.
      */
-    public function store(Request $request): JsonResponse
+    public function store(Request $request): RedirectResponse
     {
         $this->authorize('create', Category::class);
 
@@ -85,41 +92,33 @@ class CategoryController extends Controller
         ]);
 
         // Validate parent category is not self or descendant
-        if ($validated['parent_id']) {
+        if (!empty($validated['parent_id'])) {
             $parent = Category::find($validated['parent_id']);
             if (!$parent || $parent->parent_id !== null) {
-                // Only main categories can be parents
-                return response()->json([
-                    'error' => 'Parent must be a main category.',
-                ], 422);
+                return back()->withErrors(['parent_id' => 'Parent must be a main category.'])->withInput();
             }
         }
 
         $category = Category::create([
             'name'              => $validated['name'],
             'slug'              => $validated['slug'] ?? Str::slug($validated['name']),
-            'description'       => $validated['description'],
-            'parent_id'         => $validated['parent_id'],
-            'featured_image'    => $validated['featured_image'],
+            'description'       => $validated['description'] ?? null,
+            'parent_id'         => $validated['parent_id'] ?? null,
+            'featured_image'    => $validated['featured_image'] ?? null,
             'color'             => $validated['color'] ?? '#6366f1',
-            'icon'              => $validated['icon'],
-            'meta_title'        => $validated['meta_title'],
-            'meta_description'  => $validated['meta_description'],
-            'meta_keywords'     => $validated['meta_keywords'],
-            'og_image'          => $validated['og_image'],
+            'icon'              => $validated['icon'] ?? null,
+            'meta_title'        => $validated['meta_title'] ?? null,
+            'meta_description'  => $validated['meta_description'] ?? null,
+            'meta_keywords'     => $validated['meta_keywords'] ?? null,
+            'og_image'          => $validated['og_image'] ?? null,
             'order'             => $validated['order'] ?? 0,
             'is_active'         => $validated['is_active'] ?? true,
         ]);
 
-        activity()
-            ->performedOn($category)
-            ->causedBy(auth()->user())
-            ->log('created');
+        ActivityLog::record('created', 'Category created', $category);
 
-        return response()->json([
-            'message'  => 'Category created successfully.',
-            'category' => $category,
-        ], 201);
+        return redirect()->route('categories.index')
+            ->with('success', 'Category created successfully.');
     }
 
     /**
@@ -160,7 +159,7 @@ class CategoryController extends Controller
     /**
      * Update a category.
      */
-    public function update(Request $request, Category $category): JsonResponse
+    public function update(Request $request, Category $category): RedirectResponse
     {
         $this->authorize('update', $category);
 
@@ -181,77 +180,58 @@ class CategoryController extends Controller
         ]);
 
         // Prevent circular parent-child relationships
-        if ($validated['parent_id']) {
+        if (!empty($validated['parent_id'])) {
             if ($validated['parent_id'] === $category->id) {
-                return response()->json([
-                    'error' => 'Category cannot be its own parent.',
-                ], 422);
+                return back()->withErrors(['parent_id' => 'Category cannot be its own parent.'])->withInput();
             }
-
-            // Check if parent is a descendant
             if (in_array($validated['parent_id'], $category->descendants()->pluck('id')->toArray())) {
-                return response()->json([
-                    'error' => 'Cannot set a descendant as parent.',
-                ], 422);
+                return back()->withErrors(['parent_id' => 'Cannot set a descendant as parent.'])->withInput();
             }
         }
 
         $category->update([
             'name'              => $validated['name'],
             'slug'              => $validated['slug'] ?? Str::slug($validated['name']),
-            'description'       => $validated['description'],
-            'parent_id'         => $validated['parent_id'],
-            'featured_image'    => $validated['featured_image'],
-            'color'             => $validated['color'],
-            'icon'              => $validated['icon'],
-            'meta_title'        => $validated['meta_title'],
-            'meta_description'  => $validated['meta_description'],
-            'meta_keywords'     => $validated['meta_keywords'],
-            'og_image'          => $validated['og_image'],
-            'order'             => $validated['order'],
-            'is_active'         => $validated['is_active'],
+            'description'       => $validated['description'] ?? null,
+            'parent_id'         => $validated['parent_id'] ?? null,
+            'featured_image'    => $validated['featured_image'] ?? null,
+            'color'             => $validated['color'] ?? $category->color,
+            'icon'              => $validated['icon'] ?? null,
+            'meta_title'        => $validated['meta_title'] ?? null,
+            'meta_description'  => $validated['meta_description'] ?? null,
+            'meta_keywords'     => $validated['meta_keywords'] ?? null,
+            'og_image'          => $validated['og_image'] ?? null,
+            'order'             => $validated['order'] ?? $category->order,
+            'is_active'         => $validated['is_active'] ?? $category->is_active,
         ]);
 
-        activity()
-            ->performedOn($category)
-            ->causedBy(auth()->user())
-            ->log('updated');
+        ActivityLog::record('updated', 'Category updated', $category);
 
-        return response()->json([
-            'message'  => 'Category updated successfully.',
-            'category' => $category->load(['parent', 'children']),
-        ]);
+        return redirect()->route('categories.index')
+            ->with('success', 'Category updated successfully.');
     }
 
     /**
      * Delete a category (soft delete via archive).
      */
-    public function destroy(Category $category): JsonResponse
+    public function destroy(Category $category): RedirectResponse
     {
         $this->authorize('delete', $category);
 
-        // Check if category has articles
         if ($category->articles()->exists()) {
-            return response()->json([
-                'error' => 'Cannot delete category with articles. Please reassign them first.',
-            ], 422);
+            return back()->with('error', 'Cannot delete category with articles. Please reassign them first.');
         }
 
-        // Check if category has children
         if ($category->children()->exists()) {
-            return response()->json([
-                'error' => 'Cannot delete category with subcategories. Please delete or move them first.',
-            ], 422);
+            return back()->with('error', 'Cannot delete category with subcategories. Please delete or move them first.');
         }
 
-        activity()
-            ->performedOn($category)
-            ->causedBy(auth()->user())
-            ->log('deleted');
+        ActivityLog::record('deleted', 'Category deleted', $category);
 
         $category->delete();
 
-        return response()->json(['message' => 'Category deleted successfully.']);
+        return redirect()->route('categories.index')
+            ->with('success', 'Category deleted successfully.');
     }
 
     /**

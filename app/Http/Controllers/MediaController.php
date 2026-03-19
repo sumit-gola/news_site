@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\ActivityLog;
 use App\Models\Media;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -87,10 +88,7 @@ class MediaController extends Controller
             'alt_text'   => $validated['alt_text'] ?? '',
         ]);
 
-        activity()
-            ->performedOn($media)
-            ->causedBy(auth()->user())
-            ->log('uploaded');
+        ActivityLog::record('uploaded', 'uploaded', $media);
 
         return response()->json([
             'message' => 'File uploaded successfully.',
@@ -125,10 +123,7 @@ class MediaController extends Controller
 
         $media->update($validated);
 
-        activity()
-            ->performedOn($media)
-            ->causedBy(auth()->user())
-            ->log('updated metadata');
+        ActivityLog::record('updated metadata', 'updated metadata', $media);
 
         return response()->json([
             'message' => 'Media updated successfully.',
@@ -154,10 +149,7 @@ class MediaController extends Controller
             ], 422);
         }
 
-        activity()
-            ->performedOn($media)
-            ->causedBy(auth()->user())
-            ->log('deleted');
+        ActivityLog::record('deleted', 'deleted', $media);
 
         $media->delete();
 

@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\ActivityLog;
 use App\Models\Article;
 use App\Models\ArticleMeta;
+use App\Models\Category;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -18,7 +20,7 @@ class ArticleController extends Controller
     public function index(Request $request): Response
     {
         $user = auth()->user();
-        $query = Article::with(['author', 'meta', 'media']);
+        $query = Article::with(['author', 'meta', 'media', 'categories']);
 
         // Role-based filtering
         if ($user->isReporter()) {
@@ -41,9 +43,10 @@ class ArticleController extends Controller
             ->withQueryString();
 
         return Inertia::render('articles/Index', [
-            'articles' => $articles,
-            'filters'  => $request->only(['search', 'status', 'author_id']),
-            'statuses' => ['draft', 'pending', 'published', 'rejected'],
+            'articles'   => $articles,
+            'filters'    => $request->only(['search', 'status', 'author_id']),
+            'statuses'   => ['draft', 'pending', 'published', 'rejected'],
+            'categories' => Category::active()->with('children')->orderBy('order')->get(),
         ]);
     }
 
@@ -55,8 +58,9 @@ class ArticleController extends Controller
         $this->authorize('create', Article::class);
 
         return Inertia::render('articles/Create', [
-            'article' => null,
-            'authors' => User::role('reporter')->get(['id', 'name', 'email']),
+            'article'    => null,
+            'authors'    => User::role('reporter')->get(['id', 'name', 'email']),
+            'categories' => Category::active()->with('children')->orderBy('order')->get(),
         ]);
     }
 
@@ -77,6 +81,8 @@ class ArticleController extends Controller
             'meta_keywords'      => ['nullable', 'string'],
             'og_image'           => ['nullable', 'string'],
             'canonical_url'      => ['nullable', 'url'],
+            'category_ids'       => ['nullable', 'array'],
+            'category_ids.*'     => ['integer', 'exists:categories,id'],
             'media_ids'          => ['nullable', 'array'],
             'media_ids.*'        => ['integer', 'exists:media,id'],
         ]);
@@ -102,15 +108,17 @@ class ArticleController extends Controller
             'canonical_url'   => $validated['canonical_url'],
         ]);
 
+        // Attach categories if provided
+        if (!empty($validated['category_ids'])) {
+            $article->categories()->attach($validated['category_ids']);
+        }
+
         // Attach media if provided
         if (!empty($validated['media_ids'])) {
             $article->media()->attach($validated['media_ids']);
         }
 
-        activity()
-            ->performedOn($article)
-            ->causedBy(auth()->user())
-            ->log('created');
+        ActivityLog::record('created', 'created', $article);
 
         return redirect()->route('articles.edit', $article)->with('success', 'Article created successfully. Edit and submit for review.');
     }
@@ -140,8 +148,9 @@ class ArticleController extends Controller
         $this->authorize('update', $article);
 
         return Inertia::render('articles/Edit', [
-            'article' => $article->load(['meta', 'media']),
-            'authors' => User::role('reporter')->get(['id', 'name', 'email']),
+            'article'    => $article->load(['meta', 'media', 'categories']),
+            'authors'    => User::role('reporter')->get(['id', 'name', 'email']),
+            'categories' => Category::active()->with('children')->orderBy('order')->get(),
         ]);
     }
 
@@ -162,6 +171,8 @@ class ArticleController extends Controller
             'meta_keywords'      => ['nullable', 'string'],
             'og_image'           => ['nullable', 'string'],
             'canonical_url'      => ['nullable', 'url'],
+            'category_ids'       => ['nullable', 'array'],
+            'category_ids.*'     => ['integer', 'exists:categories,id'],
             'media_ids'          => ['nullable', 'array'],
             'media_ids.*'        => ['integer', 'exists:media,id'],
         ]);
@@ -183,15 +194,17 @@ class ArticleController extends Controller
             'canonical_url'   => $validated['canonical_url'],
         ]);
 
+        // Sync categories
+        if (isset($validated['category_ids'])) {
+            $article->categories()->sync($validated['category_ids']);
+        }
+
         // Sync media
         if (isset($validated['media_ids'])) {
             $article->media()->sync($validated['media_ids']);
         }
 
-        activity()
-            ->performedOn($article)
-            ->causedBy(auth()->user())
-            ->log('updated');
+        ActivityLog::record('updated', 'updated', $article);
 
         return back()->with('success', 'Article updated successfully.');
     }
@@ -203,10 +216,7 @@ class ArticleController extends Controller
     {
         $this->authorize('delete', $article);
 
-        activity()
-            ->performedOn($article)
-            ->causedBy(auth()->user())
-            ->log('deleted');
+        ActivityLog::record('deleted', 'deleted', $article);
 
         $article->delete();
 
@@ -226,10 +236,7 @@ class ArticleController extends Controller
 
         $article->update(['status' => 'pending']);
 
-        activity()
-            ->performedOn($article)
-            ->causedBy(auth()->user())
-            ->log('submitted for review');
+        ActivityLog::record('submitted for review', 'submitted for review', $article);
 
         return back()->with('success', 'Article submitted for review.');
     }
@@ -251,10 +258,7 @@ class ArticleController extends Controller
             'published_at' => now(),
         ]);
 
-        activity()
-            ->performedOn($article)
-            ->causedBy(auth()->user())
-            ->log('approved');
+        ActivityLog::record('approved', 'approved', $article);
 
         return back()->with('success', 'Article approved and published successfully.');
     }
@@ -272,10 +276,7 @@ class ArticleController extends Controller
 
         $article->update(['status' => 'rejected']);
 
-        activity()
-            ->performedOn($article)
-            ->causedBy(auth()->user())
-            ->log('rejected');
+        ActivityLog::record('rejected', 'rejected', $article);
 
         return back()->with('success', 'Article rejected.');
     }
@@ -297,10 +298,7 @@ class ArticleController extends Controller
             'published_at' => now(),
         ]);
 
-        activity()
-            ->performedOn($article)
-            ->causedBy(auth()->user())
-            ->log('published');
+        ActivityLog::record('published', 'published', $article);
 
         return back()->with('success', 'Article published successfully.');
     }

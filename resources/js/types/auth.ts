@@ -59,6 +59,22 @@ export type Paginated<T> = {
     links: PaginationLink[];
 };
 
+export type Category = {
+    id: number;
+    name: string;
+    slug: string;
+    description: string | null;
+    parent_id: number | null;
+    color: string;
+    icon: string | null;
+    order: number;
+    is_active: boolean;
+    created_at: string;
+    updated_at: string;
+    children?: Category[];
+    parent?: Category | null;
+};
+
 export type Article = {
     id: number;
     title: string;
@@ -73,4 +89,5 @@ export type Article = {
     published_at: string | null;
     created_at: string;
     updated_at: string;
+    categories?: Category[];
 };

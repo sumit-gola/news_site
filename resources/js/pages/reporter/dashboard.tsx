@@ -48,7 +48,7 @@ export default function ReporterDashboard() {
                             Track your articles and publishing progress.
                         </p>
                     </div>
-                    <Link href="/reporter/articles/create">
+                    <Link href="/articles/create">
                         <Button>
                             <FileText className="mr-1.5 size-4" />
                             New Article

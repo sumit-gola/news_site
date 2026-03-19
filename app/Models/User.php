@@ -6,6 +6,7 @@ use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -154,6 +155,14 @@ class User extends Authenticatable
     public function isManager(): bool
     {
         return $this->hasRole('manager');
+    }
+
+    /**
+     * Scope a query to users with the given role.
+     */
+    public function scopeRole(Builder $query, string $roleName)
+    {
+        return $query->whereHas('roles', fn ($q) => $q->where('name', $roleName));
     }
 
     /**

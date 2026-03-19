@@ -11,24 +11,13 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('articles', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('user_id')->constrained()->cascadeOnDelete();
-            $table->string('title');
-            $table->string('slug')->unique();
-            $table->longText('content');
-            $table->text('excerpt')->nullable();
-            $table->string('featured_image')->nullable();
-            $table->enum('status', ['draft', 'pending', 'published', 'rejected'])->default('draft');
-            $table->foreignId('approved_by')->nullable()->constrained('users')->nullOnDelete();
-            $table->timestamp('published_at')->nullable();
-            $table->bigInteger('views')->default(0);
-            $table->softDeletes();
-            $table->timestamps();
-
-            $table->index(['user_id', 'status']);
-            $table->index(['status', 'published_at']);
-            $table->index('slug');
+        Schema::table('articles', function (Blueprint $table) {
+            if (!Schema::hasColumn('articles', 'approved_by')) {
+                $table->foreignId('approved_by')->nullable()->constrained('users')->nullOnDelete()->after('status');
+            }
+            if (!Schema::hasColumn('articles', 'deleted_at')) {
+                $table->softDeletes();
+            }
         });
     }
 
@@ -37,6 +26,9 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('articles');
+        Schema::table('articles', function (Blueprint $table) {
+            $table->dropConstrainedForeignId('approved_by');
+            $table->dropSoftDeletes();
+        });
     }
 };

@@ -1,6 +1,7 @@
 import { Link, usePage } from '@inertiajs/react';
 import {
     BookOpen,
+    FileText,
     FolderGit2,
     LayoutGrid,
     Newspaper,
@@ -137,8 +138,9 @@ function ManagerNav() {
     const { url } = usePage();
 
     const items = [
-        { title: 'Manage Articles', href: '/manager/articles', icon: Newspaper },
-        { title: 'Categories',      href: '/manager/categories', icon: BookOpen  },
+        { title: 'Manager Dashboard', href: '/manager/dashboard', icon: LayoutGrid },
+        { title: 'Articles',          href: '/articles',          icon: Newspaper  },
+        { title: 'Categories',        href: '/categories',        icon: BookOpen   },
     ];
 
     return (
@@ -171,7 +173,9 @@ function ReporterNav() {
     const { url } = usePage();
 
     const items = [
-        { title: 'My Articles', href: '/reporter/articles', icon: Newspaper },
+        { title: 'Reporter Dashboard', href: '/reporter/dashboard', icon: LayoutGrid },
+        { title: 'My Articles',        href: '/articles',           icon: Newspaper  },
+        { title: 'New Article',        href: '/articles/create',    icon: FileText  },
     ];
 
     return (
