@@ -75,6 +75,24 @@ export type Category = {
     parent?: Category | null;
 };
 
+export type Tag = {
+    id: number;
+    name: string;
+    slug: string;
+};
+
+export type ArticleMeta = {
+    id: number;
+    article_id: number;
+    meta_title: string | null;
+    meta_description: string | null;
+    meta_keywords: string | null;
+    og_image: string | null;
+    canonical_url: string | null;
+    read_time: number | null;
+    word_count: number | null;
+};
+
 export type Article = {
     id: number;
     title: string;
@@ -84,10 +102,13 @@ export type Article = {
     user_id: number;
     author?: User;
     featured_image: string | null;
+    featured_image_url?: string | null;
     status: 'draft' | 'pending' | 'published' | 'rejected';
     views: number;
     published_at: string | null;
     created_at: string;
     updated_at: string;
     categories?: Category[];
+    tags?: Tag[];
+    meta?: ArticleMeta | null;
 };

@@ -6,6 +6,7 @@ use App\Models\ActivityLog;
 use App\Models\Article;
 use App\Models\ArticleMeta;
 use App\Models\Category;
+use App\Models\Tag;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -20,7 +21,7 @@ class ArticleController extends Controller
     public function index(Request $request): Response
     {
         $user = auth()->user();
-        $query = Article::with(['author', 'meta', 'media', 'categories']);
+        $query = Article::with(['author', 'meta', 'categories', 'tags']);
 
         // Role-based filtering
         if ($user->isReporter()) {
@@ -38,15 +39,18 @@ class ArticleController extends Controller
                 ->orWhere('excerpt', 'like', "%{$request->search}%"))
             ->when($request->status, fn ($q) => $q->where('status', $request->status))
             ->when($request->author_id, fn ($q) => $q->where('user_id', $request->author_id))
+            ->when($request->category_id, fn ($q) => $q->whereHas('categories', fn ($q2) => $q2->where('categories.id', $request->category_id)))
+            ->when($request->tag_id, fn ($q) => $q->whereHas('tags', fn ($q2) => $q2->where('tags.id', $request->tag_id)))
             ->latest('updated_at')
             ->paginate(15)
             ->withQueryString();
 
         return Inertia::render('articles/Index', [
             'articles'   => $articles,
-            'filters'    => $request->only(['search', 'status', 'author_id']),
+            'filters'    => $request->only(['search', 'status', 'author_id', 'category_id', 'tag_id']),
             'statuses'   => ['draft', 'pending', 'published', 'rejected'],
             'categories' => Category::active()->with('children')->orderBy('order')->get(),
+            'tags'       => Tag::orderBy('name')->get(['id', 'name', 'slug']),
         ]);
     }
 
@@ -61,6 +65,7 @@ class ArticleController extends Controller
             'article'    => null,
             'authors'    => User::role('reporter')->get(['id', 'name', 'email']),
             'categories' => Category::active()->with('children')->orderBy('order')->get(),
+            'tags'       => Tag::orderBy('name')->get(['id', 'name', 'slug']),
         ]);
     }
 
@@ -73,6 +78,7 @@ class ArticleController extends Controller
 
         $validated = $request->validate([
             'title'              => ['required', 'string', 'max:255'],
+            'slug'               => ['nullable', 'string', 'max:255', 'unique:articles,slug'],
             'excerpt'            => ['required', 'string', 'max:500'],
             'content'            => ['required', 'string'],
             'featured_image'     => ['nullable', 'string'],
@@ -81,21 +87,23 @@ class ArticleController extends Controller
             'meta_keywords'      => ['nullable', 'string'],
             'og_image'           => ['nullable', 'string'],
             'canonical_url'      => ['nullable', 'url'],
+            'published_at'       => ['nullable', 'date'],
             'category_ids'       => ['nullable', 'array'],
             'category_ids.*'     => ['integer', 'exists:categories,id'],
-            'media_ids'          => ['nullable', 'array'],
-            'media_ids.*'        => ['integer', 'exists:media,id'],
+            'tag_names'          => ['nullable', 'array'],
+            'tag_names.*'        => ['string', 'max:50'],
         ]);
 
         // Create the article
         $article = Article::create([
             'user_id'        => auth()->id(),
             'title'          => $validated['title'],
-            'slug'           => $this->generateUniqueSlug($validated['title']),
+            'slug'           => !empty($validated['slug']) ? Str::slug($validated['slug']) : $this->generateUniqueSlug($validated['title']),
             'excerpt'        => $validated['excerpt'],
             'content'        => $validated['content'],
             'featured_image' => $validated['featured_image'],
             'status'         => 'draft',
+            'published_at'   => $validated['published_at'] ?? null,
         ]);
 
         // Create metadata
@@ -113,10 +121,8 @@ class ArticleController extends Controller
             $article->categories()->attach($validated['category_ids']);
         }
 
-        // Attach media if provided
-        if (!empty($validated['media_ids'])) {
-            $article->media()->attach($validated['media_ids']);
-        }
+        // Attach tags if provided
+        $this->syncTags($article, $validated['tag_names'] ?? null);
 
         ActivityLog::record('created', 'created', $article);
 
@@ -136,7 +142,7 @@ class ArticleController extends Controller
         }
 
         return Inertia::render('articles/Show', [
-            'article' => $article->load(['author', 'meta', 'media', 'approvedBy']),
+            'article' => $article->load(['author', 'meta', 'categories', 'tags', 'approvedBy']),
         ]);
     }
 
@@ -148,9 +154,10 @@ class ArticleController extends Controller
         $this->authorize('update', $article);
 
         return Inertia::render('articles/Edit', [
-            'article'    => $article->load(['meta', 'media', 'categories']),
+            'article'    => $article->load(['meta', 'categories', 'tags']),
             'authors'    => User::role('reporter')->get(['id', 'name', 'email']),
             'categories' => Category::active()->with('children')->orderBy('order')->get(),
+            'tags'       => Tag::orderBy('name')->get(['id', 'name', 'slug']),
         ]);
     }
 
@@ -163,6 +170,7 @@ class ArticleController extends Controller
 
         $validated = $request->validate([
             'title'              => ['required', 'string', 'max:255'],
+            'slug'               => ['nullable', 'string', 'max:255', 'unique:articles,slug,' . $article->id],
             'excerpt'            => ['required', 'string', 'max:500'],
             'content'            => ['required', 'string'],
             'featured_image'     => ['nullable', 'string'],
@@ -171,18 +179,21 @@ class ArticleController extends Controller
             'meta_keywords'      => ['nullable', 'string'],
             'og_image'           => ['nullable', 'string'],
             'canonical_url'      => ['nullable', 'url'],
+            'published_at'       => ['nullable', 'date'],
             'category_ids'       => ['nullable', 'array'],
             'category_ids.*'     => ['integer', 'exists:categories,id'],
-            'media_ids'          => ['nullable', 'array'],
-            'media_ids.*'        => ['integer', 'exists:media,id'],
+            'tag_names'          => ['nullable', 'array'],
+            'tag_names.*'        => ['string', 'max:50'],
         ]);
 
         // Update article
         $article->update([
             'title'          => $validated['title'],
+            'slug'           => !empty($validated['slug']) ? Str::slug($validated['slug']) : $this->generateUniqueSlug($validated['title']),
             'excerpt'        => $validated['excerpt'],
             'content'        => $validated['content'],
             'featured_image' => $validated['featured_image'],
+            'published_at'   => $validated['published_at'] ?? $article->published_at,
         ]);
 
         // Update metadata
@@ -199,10 +210,8 @@ class ArticleController extends Controller
             $article->categories()->sync($validated['category_ids']);
         }
 
-        // Sync media
-        if (isset($validated['media_ids'])) {
-            $article->media()->sync($validated['media_ids']);
-        }
+        // Sync tags
+        $this->syncTags($article, $validated['tag_names'] ?? null);
 
         ActivityLog::record('updated', 'updated', $article);
 
@@ -318,5 +327,37 @@ class ArticleController extends Controller
         }
 
         return $slug;
+    }
+
+    /**
+     * Sync article tags, creating tags that do not exist yet.
+     */
+    private function syncTags(Article $article, ?array $tagNames): void
+    {
+        if (empty($tagNames)) {
+            $article->tags()->sync([]);
+            return;
+        }
+
+        $tagIds = collect($tagNames)
+            ->filter(fn ($name) => is_string($name) && trim($name) !== '')
+            ->map(fn ($name) => trim($name))
+            ->unique()
+            ->map(function (string $name) {
+                $tag = Tag::firstOrCreate(
+                    ['slug' => Str::slug($name)],
+                    ['name' => $name],
+                );
+
+                if ($tag->name !== $name) {
+                    $tag->update(['name' => $name]);
+                }
+
+                return $tag->id;
+            })
+            ->values()
+            ->all();
+
+        $article->tags()->sync($tagIds);
     }
 }

@@ -1,5 +1,5 @@
 import { Head } from '@inertiajs/react';
-import { BarChart3, FolderOpen, ToggleLeft } from 'lucide-react';
+import { BarChart3, FolderOpen, Newspaper, ToggleLeft } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import AppLayout from '@/layouts/app-layout';
 import type { BreadcrumbItem } from '@/types';
@@ -12,6 +12,8 @@ interface Props {
     stats: {
         total_categories: number;
         active_categories: number;
+        pending_articles: number;
+        published_articles: number;
     };
 }
 
@@ -31,6 +33,20 @@ export default function ManagerDashboard({ stats }: Props) {
             color: 'text-green-600 dark:text-green-400',
             bgColor: 'bg-green-100 dark:bg-green-900/30',
         },
+        {
+            title: 'Pending Articles',
+            value: stats.pending_articles,
+            icon: Newspaper,
+            color: 'text-amber-600 dark:text-amber-400',
+            bgColor: 'bg-amber-100 dark:bg-amber-900/30',
+        },
+        {
+            title: 'Published Articles',
+            value: stats.published_articles,
+            icon: Newspaper,
+            color: 'text-blue-600 dark:text-blue-400',
+            bgColor: 'bg-blue-100 dark:bg-blue-900/30',
+        },
     ];
 
     return (
@@ -44,7 +60,7 @@ export default function ManagerDashboard({ stats }: Props) {
                     </p>
                 </div>
 
-                <div className="grid gap-4 md:grid-cols-2">
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                     {statCards.map((stat) => {
                         const Icon = stat.icon;
                         return (
@@ -72,7 +88,7 @@ export default function ManagerDashboard({ stats }: Props) {
                     </CardHeader>
                     <CardContent>
                         <p className="text-muted-foreground text-sm">
-                            Use the sidebar to access category management.
+                            Use the sidebar to review pending stories, edit content, and publish approved news.
                         </p>
                     </CardContent>
                 </Card>

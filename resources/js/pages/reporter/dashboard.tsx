@@ -1,5 +1,5 @@
 import { Head } from '@inertiajs/react';
-import { FolderOpen } from 'lucide-react';
+import { FileText, FolderOpen, Send } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import AppLayout from '@/layouts/app-layout';
 import type { BreadcrumbItem } from '@/types';
@@ -11,6 +11,8 @@ const breadcrumbs: BreadcrumbItem[] = [
 interface Props {
     stats: {
         total_categories: number;
+        my_drafts: number;
+        my_published: number;
     };
 }
 
@@ -26,7 +28,7 @@ export default function ReporterDashboard({ stats }: Props) {
                     </p>
                 </div>
 
-                <div className="grid gap-4 md:grid-cols-2">
+                <div className="grid gap-4 md:grid-cols-3">
                     <Card>
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                             <CardTitle className="text-sm font-medium">Categories Available</CardTitle>
@@ -36,6 +38,30 @@ export default function ReporterDashboard({ stats }: Props) {
                         </CardHeader>
                         <CardContent>
                             <div className="text-2xl font-bold">{stats.total_categories}</div>
+                        </CardContent>
+                    </Card>
+
+                    <Card>
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium">My Drafts</CardTitle>
+                            <div className="rounded-lg bg-amber-100 p-2 dark:bg-amber-900/30">
+                                <Send className="size-4 text-amber-600 dark:text-amber-400" />
+                            </div>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-2xl font-bold">{stats.my_drafts}</div>
+                        </CardContent>
+                    </Card>
+
+                    <Card>
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium">My Published</CardTitle>
+                            <div className="rounded-lg bg-blue-100 p-2 dark:bg-blue-900/30">
+                                <FileText className="size-4 text-blue-600 dark:text-blue-400" />
+                            </div>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-2xl font-bold">{stats.my_published}</div>
                         </CardContent>
                     </Card>
                 </div>

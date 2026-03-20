@@ -1,8 +1,10 @@
 import { Link, usePage } from '@inertiajs/react';
 import {
     BookOpen,
+    FileText,
     FolderGit2,
     LayoutGrid,
+    Newspaper,
     Settings,
     Shield,
     Users,
@@ -91,8 +93,11 @@ function AdminNav() {
     const { url } = usePage();
 
     const items = [
-        { title: 'User Management',    href: '/admin/users',  icon: Users  },
-        { title: 'Roles & Permissions', href: '/admin/roles', icon: Shield },
+        { title: 'User Management',    href: '/admin/users',      icon: Users      },
+        { title: 'Roles & Permissions', href: '/admin/roles',     icon: Shield     },
+        { title: 'Articles',           href: '/articles',        icon: Newspaper  },
+        { title: 'New Article',        href: '/articles/create', icon: FileText   },
+        { title: 'Categories',         href: '/categories',      icon: BookOpen   },
     ];
 
     return (
@@ -126,6 +131,7 @@ function ManagerNav() {
 
     const items = [
         { title: 'Manager Dashboard', href: '/manager/dashboard', icon: LayoutGrid },
+        { title: 'Articles',          href: '/articles',          icon: Newspaper  },
         { title: 'Categories',        href: '/categories',        icon: BookOpen   },
     ];
 
@@ -160,6 +166,8 @@ function ReporterNav() {
 
     const items = [
         { title: 'Reporter Dashboard', href: '/reporter/dashboard', icon: LayoutGrid },
+        { title: 'My Articles',        href: '/articles',           icon: Newspaper  },
+        { title: 'New Article',        href: '/articles/create',    icon: FileText   },
     ];
 
     return (

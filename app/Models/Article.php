@@ -5,8 +5,8 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
 
@@ -65,6 +65,14 @@ class Article extends Model
     {
         return $this->belongsToMany(Category::class, 'article_category')
                     ->withTimestamps();
+    }
+
+    /**
+     * Tags attached to this article.
+     */
+    public function tags(): BelongsToMany
+    {
+        return $this->belongsToMany(Tag::class, 'article_tag');
     }
 
     // ─── Scopes ────────────────────────────────────────────────────────────
@@ -172,10 +180,10 @@ class Article extends Model
     }
 
     /**
-     * Get human-readable URL.
+     * Get public-facing URL for this article.
      */
     public function getUrlAttribute(): string
     {
-        return route('articles.show', $this->slug);
+        return route('news.show', $this->slug);
     }
 }

@@ -98,21 +98,33 @@ class RolesAndPermissionsSeeder extends Seeder
             'name'     => 'Admin User',
             'password' => Hash::make('password'),
             'status'   => 'active',
+            'email_verified_at' => now(),
         ]);
+        if (! $adminUser->email_verified_at) {
+            $adminUser->forceFill(['email_verified_at' => now()])->save();
+        }
         $adminUser->syncRoles(['admin']);
 
         $managerUser = User::firstOrCreate(['email' => 'manager@newsportal.com'], [
             'name'     => 'Manager User',
             'password' => Hash::make('password'),
             'status'   => 'active',
+            'email_verified_at' => now(),
         ]);
+        if (! $managerUser->email_verified_at) {
+            $managerUser->forceFill(['email_verified_at' => now()])->save();
+        }
         $managerUser->syncRoles(['manager']);
 
         $reporterUser = User::firstOrCreate(['email' => 'reporter@newsportal.com'], [
             'name'     => 'Reporter User',
             'password' => Hash::make('password'),
             'status'   => 'active',
+            'email_verified_at' => now(),
         ]);
+        if (! $reporterUser->email_verified_at) {
+            $reporterUser->forceFill(['email_verified_at' => now()])->save();
+        }
         $reporterUser->syncRoles(['reporter']);
 
         $this->command->info('Roles, permissions and default users seeded successfully.');
