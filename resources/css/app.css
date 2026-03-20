@@ -1,6 +1,7 @@
 @import 'tailwindcss';
 
 @import 'tw-animate-css';
+@import 'ckeditor5/ckeditor5.css';
 
 @source '../views';
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
@@ -218,6 +219,65 @@
 .article-content hr { border: none; border-top: 2px solid #e5e7eb; margin: 2rem 0; }
 .dark .article-content hr { border-color: #374151; }
 .article-content figure { margin: 1.5rem 0; }
+
+.ckeditor-shell {
+    --ck-border-radius: 0;
+    --ck-color-base-background: transparent;
+    --ck-color-base-border: color-mix(in oklab, var(--border) 100%, transparent);
+    --ck-color-toolbar-background: color-mix(in oklab, var(--muted) 55%, transparent);
+    --ck-color-toolbar-border: color-mix(in oklab, var(--border) 100%, transparent);
+    --ck-color-panel-background: var(--background);
+    --ck-color-panel-border: color-mix(in oklab, var(--border) 100%, transparent);
+    --ck-color-button-default-hover-background: color-mix(in oklab, var(--muted) 80%, transparent);
+    --ck-color-button-default-active-background: color-mix(in oklab, var(--accent) 90%, transparent);
+    --ck-color-button-on-background: color-mix(in oklab, var(--accent) 95%, transparent);
+    --ck-color-button-on-color: var(--foreground);
+    --ck-color-focus-border: var(--ring);
+    --ck-color-base-text: var(--foreground);
+    --ck-color-text: var(--foreground);
+    --ck-color-link-default: #dc2626;
+    --ck-font-size-base: 0.95rem;
+}
+
+.ckeditor-shell .ck.ck-toolbar {
+    border: 0;
+    border-bottom: 1px solid var(--border);
+    padding: 0.5rem;
+}
+
+.ckeditor-shell .ck.ck-editor__main > .ck-editor__editable {
+    min-height: 320px;
+    border: 0;
+    padding: 1rem;
+    box-shadow: none;
+    background: transparent;
+}
+
+.ckeditor-shell .ck.ck-editor__main > .ck-editor__editable.ck-focused {
+    border: 0;
+    box-shadow: inset 0 0 0 1px var(--ring);
+}
+
+.ckeditor-shell .ck.ck-content {
+    font-size: 1rem;
+    line-height: 1.8;
+}
+
+.ckeditor-shell .ck.ck-content h2,
+.ckeditor-shell .ck.ck-content h3,
+.ckeditor-shell .ck.ck-content h4 {
+    font-weight: 700;
+}
+
+.ckeditor-shell .ck.ck-content blockquote {
+    border-left: 4px solid #dc2626;
+    background: #fef2f2;
+    padding: 0.75rem 1rem;
+}
+
+.dark .ckeditor-shell .ck.ck-content blockquote {
+    background: #1f1212;
+}
 .article-content figcaption { font-size: 0.875rem; color: #6b7280; text-align: center; margin-top: 0.5rem; }
 
 @keyframes accordion-down {

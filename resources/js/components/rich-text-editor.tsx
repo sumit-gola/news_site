@@ -7,127 +7,230 @@ type RichTextEditorProps = {
   placeholder?: string;
 };
 
-const toolbarButtonClasses =
-  'inline-flex h-8 min-w-8 items-center justify-center rounded border border-input bg-background px-2 text-xs font-medium text-foreground shadow-sm transition hover:bg-muted/60 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none disabled:opacity-50';
+type LoadedEditor = {
+  CKEditor: React.ComponentType<any>;
+  ClassicEditor: unknown;
+  config: Record<string, unknown>;
+};
 
-const emptyMarkup = '<p></p>';
+function buildEditorConfig(ckeditor: Record<string, unknown>, placeholder?: string, uploadUrl?: string) {
+  const plugins = [
+    ckeditor.Essentials,
+    ckeditor.Paragraph,
+    ckeditor.Heading,
+    ckeditor.Alignment,
+    ckeditor.Autoformat,
+    ckeditor.AutoImage,
+    ckeditor.AutoLink,
+    ckeditor.Bold,
+    ckeditor.Italic,
+    ckeditor.Underline,
+    ckeditor.Strikethrough,
+    ckeditor.Subscript,
+    ckeditor.Superscript,
+    ckeditor.Code,
+    ckeditor.BlockQuote,
+    ckeditor.CodeBlock,
+    ckeditor.FontFamily,
+    ckeditor.FontSize,
+    ckeditor.FontColor,
+    ckeditor.FontBackgroundColor,
+    ckeditor.Highlight,
+    ckeditor.HorizontalLine,
+    ckeditor.GeneralHtmlSupport,
+    ckeditor.HtmlEmbed,
+    ckeditor.Link,
+    ckeditor.BulletedList,
+    ckeditor.NumberedList,
+    ckeditor.TodoList,
+    ckeditor.ListProperties,
+    ckeditor.Indent,
+    ckeditor.IndentBlock,
+    ckeditor.MediaEmbed,
+    ckeditor.PasteFromOffice,
+    ckeditor.RemoveFormat,
+    ckeditor.SelectAll,
+    ckeditor.ShowBlocks,
+    ckeditor.SourceEditing,
+    ckeditor.SpecialCharacters,
+    ckeditor.SpecialCharactersEssentials,
+    ckeditor.SpecialCharactersMathematical,
+    ckeditor.SpecialCharactersText,
+    ckeditor.Table,
+    ckeditor.TableToolbar,
+    ckeditor.TableProperties,
+    ckeditor.TableCellProperties,
+  ].filter(Boolean);
 
-function normalizeEditorHtml(html: string): string {
-  const trimmed = html.trim();
+  const config: Record<string, unknown> = {
+    licenseKey: 'GPL',
+    plugins,
+    placeholder,
+    toolbar: {
+      items: [
+        'undo',
+        'redo',
+        '|',
+        'findAndReplace',
+        'selectAll',
+        'showBlocks',
+        'sourceEditing',
+        '|',
+        'heading',
+        'fontFamily',
+        'fontSize',
+        'fontColor',
+        'fontBackgroundColor',
+        'highlight',
+        '|',
+        'bold',
+        'italic',
+        'underline',
+        'strikethrough',
+        'subscript',
+        'superscript',
+        'code',
+        'removeFormat',
+        '|',
+        'alignment',
+        'bulletedList',
+        'numberedList',
+        'todoList',
+        'outdent',
+        'indent',
+        '|',
+        'link',
+        'blockQuote',
+        'insertTable',
+        'mediaEmbed',
+        'specialCharacters',
+        'horizontalLine',
+        'codeBlock',
+        'htmlEmbed',
+      ],
+      shouldNotGroupWhenFull: false,
+    },
+    heading: {
+      options: [
+        { model: 'paragraph', title: 'Paragraph', class: 'ck-heading_paragraph' },
+        { model: 'heading2', view: 'h2', title: 'Heading 2', class: 'ck-heading_heading2' },
+        { model: 'heading3', view: 'h3', title: 'Heading 3', class: 'ck-heading_heading3' },
+        { model: 'heading4', view: 'h4', title: 'Heading 4', class: 'ck-heading_heading4' },
+      ],
+    },
+    link: {
+      addTargetToExternalLinks: true,
+      defaultProtocol: 'https://',
+      decorators: {
+        openInNewTab: {
+          mode: 'manual',
+          label: 'Open in a new tab',
+          attributes: {
+            target: '_blank',
+            rel: 'noopener noreferrer',
+          },
+        },
+      },
+    },
+    list: {
+      properties: {
+        styles: true,
+        startIndex: true,
+        reversed: true,
+      },
+    },
+    table: {
+      contentToolbar: [
+        'tableColumn',
+        'tableRow',
+        'mergeTableCells',
+        'tableProperties',
+        'tableCellProperties',
+      ],
+    },
+    htmlSupport: {
+      allow: [
+        {
+          name: /.*/,
+          attributes: true,
+          classes: true,
+          styles: true,
+        },
+      ],
+    },
+    mediaEmbed: {
+      previewsInData: true,
+    },
+  };
 
-  if (trimmed === '' || trimmed === '<br>' || trimmed === '<p><br></p>') {
-    return emptyMarkup;
+  if (ckeditor.FindAndReplace) {
+    plugins.push(ckeditor.FindAndReplace);
   }
 
-  return html;
+  if (uploadUrl && ckeditor.SimpleUploadAdapter) {
+    plugins.push(ckeditor.SimpleUploadAdapter);
+    config.simpleUpload = {
+      uploadUrl,
+      withCredentials: true,
+    };
+  }
+
+  return config;
 }
 
-function isVisuallyEmpty(html: string): boolean {
-  return html
-    .replace(/<br\s*\/?>/gi, '')
-    .replace(/<[^>]+>/g, '')
-    .replace(/&nbsp;/gi, ' ')
-    .trim() === '';
-}
-
-export function RichTextEditor({ value, onChange, uploadUrl: _uploadUrl, placeholder }: RichTextEditorProps) {
-  const editorRef = React.useRef<HTMLDivElement>(null);
-  const [isEmpty, setIsEmpty] = React.useState(isVisuallyEmpty(value));
-
-  const syncContent = React.useCallback(() => {
-    if (!editorRef.current) {
-      return;
-    }
-
-    const nextValue = normalizeEditorHtml(editorRef.current.innerHTML);
-    setIsEmpty(isVisuallyEmpty(nextValue));
-
-    if (nextValue !== value) {
-      onChange(nextValue);
-    }
-  }, [onChange, value]);
-
-  const focusEditor = () => {
-    editorRef.current?.focus();
-  };
-
-  const runCommand = (command: string, commandValue?: string) => {
-    focusEditor();
-    document.execCommand(command, false, commandValue);
-    syncContent();
-  };
-
-  const insertHeading = (tagName: 'H2' | 'H3' | 'P') => {
-    const block = tagName === 'P' ? 'defaultParagraphSeparator' : 'formatBlock';
-    const blockValue = tagName === 'P' ? 'p' : tagName;
-
-    runCommand(block, blockValue);
-  };
-
-  const handleLink = () => {
-    const selection = window.getSelection();
-    const selectedText = selection?.toString().trim() ?? '';
-    const currentValue = selectedText === '' ? 'https://' : selectedText;
-    const nextUrl = window.prompt('Enter a URL', currentValue);
-
-    if (!nextUrl) {
-      return;
-    }
-
-    runCommand('createLink', nextUrl);
-  };
+export function RichTextEditor({ value, onChange, uploadUrl, placeholder }: RichTextEditorProps) {
+  const [loadedEditor, setLoadedEditor] = React.useState<LoadedEditor | null>(null);
 
   React.useEffect(() => {
-    if (!editorRef.current) {
-      return;
-    }
+    let isActive = true;
 
-    const nextValue = normalizeEditorHtml(value);
+    const loadEditor = async () => {
+      const [{ CKEditor }, ckeditor] = await Promise.all([
+        import('@ckeditor/ckeditor5-react'),
+        import('ckeditor5'),
+      ]);
 
-    if (editorRef.current.innerHTML !== nextValue) {
-      editorRef.current.innerHTML = nextValue;
-    }
+      if (!isActive) {
+        return;
+      }
 
-    setIsEmpty(isVisuallyEmpty(nextValue));
-  }, [value]);
+      setLoadedEditor({
+        CKEditor,
+        ClassicEditor: ckeditor.ClassicEditor,
+        config: buildEditorConfig(ckeditor, placeholder, uploadUrl),
+      });
+    };
 
-  React.useEffect(() => {
-    document.execCommand('defaultParagraphSeparator', false, 'p');
-  }, []);
+    void loadEditor();
+
+    return () => {
+      isActive = false;
+    };
+  }, [placeholder, uploadUrl]);
+
+  if (!loadedEditor) {
+    return (
+      <textarea
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        placeholder={placeholder}
+        className="min-h-[320px] w-full rounded-md border border-input bg-background px-4 py-3 text-base leading-7 outline-none focus:ring-2 focus:ring-ring"
+      />
+    );
+  }
+
+  const { CKEditor, ClassicEditor, config } = loadedEditor;
 
   return (
-    <div className="w-full rounded-md border border-input bg-background p-1">
-      <div className="flex flex-wrap gap-2 border-b border-border px-2 py-2">
-        <button type="button" className={toolbarButtonClasses} onClick={() => insertHeading('H2')}>H2</button>
-        <button type="button" className={toolbarButtonClasses} onClick={() => insertHeading('H3')}>H3</button>
-        <button type="button" className={toolbarButtonClasses} onClick={() => insertHeading('P')}>P</button>
-        <button type="button" className={toolbarButtonClasses} onClick={() => runCommand('bold')}><strong>B</strong></button>
-        <button type="button" className={toolbarButtonClasses} onClick={() => runCommand('italic')}><em>I</em></button>
-        <button type="button" className={toolbarButtonClasses} onClick={() => runCommand('underline')}><u>U</u></button>
-        <button type="button" className={toolbarButtonClasses} onClick={() => runCommand('insertUnorderedList')}>List</button>
-        <button type="button" className={toolbarButtonClasses} onClick={() => runCommand('insertOrderedList')}>1.</button>
-        <button type="button" className={toolbarButtonClasses} onClick={() => runCommand('formatBlock', 'blockquote')}>Quote</button>
-        <button type="button" className={toolbarButtonClasses} onClick={handleLink}>Link</button>
-        <button type="button" className={toolbarButtonClasses} onClick={() => runCommand('removeFormat')}>Clear</button>
-      </div>
-
-      <div className="relative">
-        {isEmpty && placeholder ? (
-          <div className="pointer-events-none absolute left-4 top-4 text-sm text-muted-foreground">
-            {placeholder}
-          </div>
-        ) : null}
-
-        <div
-          ref={editorRef}
-          contentEditable
-          suppressContentEditableWarning
-          onInput={syncContent}
-          onBlur={syncContent}
-          className="min-h-[320px] px-4 py-4 text-base leading-7 outline-none"
-          style={{ whiteSpace: 'pre-wrap' }}
-        />
-      </div>
+    <div className="ckeditor-shell overflow-hidden rounded-md border border-input bg-background shadow-sm">
+      <CKEditor
+        editor={ClassicEditor}
+        config={config}
+        data={value}
+        onChange={(_event: unknown, editor: { getData: () => string }) => {
+          onChange(editor.getData());
+        }}
+      />
     </div>
   );
 }

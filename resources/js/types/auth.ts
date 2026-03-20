@@ -93,6 +93,16 @@ export type ArticleMeta = {
     word_count: number | null;
 };
 
+export type ArticlePermissions = {
+    view: boolean;
+    update: boolean;
+    delete: boolean;
+    submit: boolean;
+    approve: boolean;
+    reject: boolean;
+    publish: boolean;
+};
+
 export type Article = {
     id: number;
     title: string;
@@ -111,4 +121,5 @@ export type Article = {
     categories?: Category[];
     tags?: Tag[];
     meta?: ArticleMeta | null;
+    permissions?: ArticlePermissions;
 };

@@ -14,6 +14,10 @@ class Article extends Model
 {
     use HasFactory, SoftDeletes;
 
+    protected $appends = [
+        'featured_image_url',
+    ];
+
     protected $fillable = [
         'title',
         'slug',
@@ -160,6 +164,32 @@ class Article extends Model
             return asset('storage/' . $this->featured_image);
         }
         return 'https://via.placeholder.com/1200x630?text=No+Image';
+    }
+
+    /**
+     * Get a normalized featured image URL suitable for internal and public views.
+     */
+    public function getFeaturedImageUrlAttribute(): ?string
+    {
+        $path = trim((string) $this->featured_image);
+
+        if ($path === '') {
+            return null;
+        }
+
+        if (Str::startsWith($path, ['http://', 'https://', '//'])) {
+            return $path;
+        }
+
+        if (Str::startsWith($path, '/storage/')) {
+            return asset(ltrim($path, '/'));
+        }
+
+        if (Str::startsWith($path, '/')) {
+            return url($path);
+        }
+
+        return asset('storage/' . ltrim($path, '/'));
     }
 
     /**

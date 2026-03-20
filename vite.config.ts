@@ -21,6 +21,9 @@ export default defineConfig({
             formVariants: true,
         }),
     ],
+    resolve: {
+        dedupe: ['ckeditor5'],
+    },
     esbuild: {
         jsx: 'automatic',
     },

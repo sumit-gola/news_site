@@ -8,8 +8,10 @@ use App\Models\ArticleMeta;
 use App\Models\Category;
 use App\Models\Tag;
 use App\Models\User;
+use App\Services\HtmlSanitizer;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -20,8 +22,11 @@ class ArticleController extends Controller
      */
     public function index(Request $request): Response
     {
-        $user = auth()->user();
-        $query = Article::with(['author', 'meta', 'categories', 'tags']);
+        $this->authorize('viewAny', Article::class);
+
+        /** @var User $user */
+        $user = $request->user();
+        $query = Article::query();
 
         // Role-based filtering
         if ($user->isReporter()) {
@@ -33,22 +38,44 @@ class ArticleController extends Controller
         }
         // Admins see all articles (no filter)
 
-        // Apply search and status filters
+        $query
+            ->when($request->search, function ($builder) use ($request) {
+                $search = trim((string) $request->search);
+
+                $builder->where(function ($searchQuery) use ($search) {
+                    $searchQuery
+                        ->where('title', 'like', "%{$search}%")
+                        ->orWhere('excerpt', 'like', "%{$search}%");
+                });
+            })
+            ->when($request->author_id, fn ($builder) => $builder->where('user_id', $request->author_id))
+            ->when($request->category_id, fn ($builder) => $builder->whereHas('categories', fn ($categoryQuery) => $categoryQuery->where('categories.id', $request->category_id)))
+            ->when($request->tag_id, fn ($builder) => $builder->whereHas('tags', fn ($tagQuery) => $tagQuery->where('tags.id', $request->tag_id)));
+
+        $summaryBaseQuery = clone $query;
+
+        $summary = [
+            'total'     => (clone $summaryBaseQuery)->count(),
+            'draft'     => (clone $summaryBaseQuery)->where('status', 'draft')->count(),
+            'pending'   => (clone $summaryBaseQuery)->where('status', 'pending')->count(),
+            'published' => (clone $summaryBaseQuery)->where('status', 'published')->count(),
+            'rejected'  => (clone $summaryBaseQuery)->where('status', 'rejected')->count(),
+        ];
+
         $articles = $query
-            ->when($request->search, fn ($q) => $q->where('title', 'like', "%{$request->search}%")
-                ->orWhere('excerpt', 'like', "%{$request->search}%"))
-            ->when($request->status, fn ($q) => $q->where('status', $request->status))
-            ->when($request->author_id, fn ($q) => $q->where('user_id', $request->author_id))
-            ->when($request->category_id, fn ($q) => $q->whereHas('categories', fn ($q2) => $q2->where('categories.id', $request->category_id)))
-            ->when($request->tag_id, fn ($q) => $q->whereHas('tags', fn ($q2) => $q2->where('tags.id', $request->tag_id)))
+            ->with(['author', 'meta', 'categories', 'tags'])
+            ->when($request->status, fn ($builder) => $builder->where('status', $request->status))
             ->latest('updated_at')
             ->paginate(15)
-            ->withQueryString();
+            ->withQueryString()
+            ->through(fn (Article $article) => $this->serializeArticleForManagement($article, $user));
 
         return Inertia::render('articles/Index', [
             'articles'   => $articles,
             'filters'    => $request->only(['search', 'status', 'author_id', 'category_id', 'tag_id']),
             'statuses'   => ['draft', 'pending', 'published', 'rejected'],
+            'summary'    => $summary,
+            'authors'    => User::role('reporter')->orderBy('name')->get(['id', 'name']),
             'categories' => Category::active()->with('children')->orderBy('order')->get(),
             'tags'       => Tag::orderBy('name')->get(['id', 'name', 'slug']),
         ]);
@@ -76,9 +103,12 @@ class ArticleController extends Controller
     {
         $this->authorize('create', Article::class);
 
+        /** @var User $user */
+        $user = $request->user();
+
         $validated = $request->validate([
             'title'              => ['required', 'string', 'max:255'],
-            'slug'               => ['nullable', 'string', 'max:255', 'unique:articles,slug'],
+            'slug'               => ['nullable', 'string', 'max:255', Rule::unique('articles', 'slug')],
             'excerpt'            => ['required', 'string', 'max:500'],
             'content'            => ['required', 'string'],
             'featured_image'     => ['nullable', 'string'],
@@ -96,25 +126,16 @@ class ArticleController extends Controller
 
         // Create the article
         $article = Article::create([
-            'user_id'        => auth()->id(),
-            'title'          => $validated['title'],
-            'slug'           => !empty($validated['slug']) ? Str::slug($validated['slug']) : $this->generateUniqueSlug($validated['title']),
-            'excerpt'        => $validated['excerpt'],
-            'content'        => $validated['content'],
-            'featured_image' => $validated['featured_image'],
+            'user_id'        => $user->id,
+            ...$this->buildArticlePayload($validated),
             'status'         => 'draft',
-            'published_at'   => $validated['published_at'] ?? null,
         ]);
 
         // Create metadata
-        ArticleMeta::create([
-            'article_id'      => $article->id,
-            'meta_title'      => $validated['meta_title'] ?? $validated['title'],
-            'meta_description'=> $validated['meta_description'] ?? $validated['excerpt'],
-            'meta_keywords'   => $validated['meta_keywords'],
-            'og_image'        => $validated['og_image'] ?? $validated['featured_image'],
-            'canonical_url'   => $validated['canonical_url'],
-        ]);
+        ArticleMeta::create(array_merge(
+            ['article_id' => $article->id],
+            $this->buildMetaPayload($validated),
+        ));
 
         // Attach categories if provided
         if (!empty($validated['category_ids'])) {
@@ -170,7 +191,7 @@ class ArticleController extends Controller
 
         $validated = $request->validate([
             'title'              => ['required', 'string', 'max:255'],
-            'slug'               => ['nullable', 'string', 'max:255', 'unique:articles,slug,' . $article->id],
+            'slug'               => ['nullable', 'string', 'max:255', Rule::unique('articles', 'slug')->ignore($article->id)],
             'excerpt'            => ['required', 'string', 'max:500'],
             'content'            => ['required', 'string'],
             'featured_image'     => ['nullable', 'string'],
@@ -187,23 +208,10 @@ class ArticleController extends Controller
         ]);
 
         // Update article
-        $article->update([
-            'title'          => $validated['title'],
-            'slug'           => !empty($validated['slug']) ? Str::slug($validated['slug']) : $this->generateUniqueSlug($validated['title']),
-            'excerpt'        => $validated['excerpt'],
-            'content'        => $validated['content'],
-            'featured_image' => $validated['featured_image'],
-            'published_at'   => $validated['published_at'] ?? $article->published_at,
-        ]);
+        $article->update($this->buildArticlePayload($validated, $article));
 
         // Update metadata
-        $article->meta()->updateOrCreate([], [
-            'meta_title'      => $validated['meta_title'] ?? $validated['title'],
-            'meta_description'=> $validated['meta_description'] ?? $validated['excerpt'],
-            'meta_keywords'   => $validated['meta_keywords'],
-            'og_image'        => $validated['og_image'] ?? $validated['featured_image'],
-            'canonical_url'   => $validated['canonical_url'],
-        ]);
+        $article->meta()->updateOrCreate([], $this->buildMetaPayload($validated));
 
         // Sync categories
         if (isset($validated['category_ids'])) {
@@ -237,10 +245,14 @@ class ArticleController extends Controller
      */
     public function submit(Article $article)
     {
-        $this->authorize('update', $article);
+        $this->authorize('submitForApproval', $article);
 
         if (!$article->isDraft()) {
             return back()->with('error', 'Only draft articles can be submitted.');
+        }
+
+        if (!$article->categories()->exists()) {
+            return back()->with('error', 'Add at least one category before submitting for review.');
         }
 
         $article->update(['status' => 'pending']);
@@ -253,9 +265,12 @@ class ArticleController extends Controller
     /**
      * Approve an article (Manager/Admin → Published).
      */
-    public function approve(Article $article)
+    public function approve(Request $request, Article $article)
     {
         $this->authorize('approve', $article);
+
+        /** @var User $user */
+        $user = $request->user();
 
         if (!$article->isPending()) {
             return back()->with('error', 'Only pending articles can be approved.');
@@ -263,7 +278,7 @@ class ArticleController extends Controller
 
         $article->update([
             'status'       => 'published',
-            'approved_by'  => auth()->id(),
+            'approved_by'  => $user->id,
             'published_at' => now(),
         ]);
 
@@ -275,9 +290,9 @@ class ArticleController extends Controller
     /**
      * Reject an article (Manager/Admin).
      */
-    public function reject(Request $request, Article $article)
+    public function reject(Article $article)
     {
-        $this->authorize('approve', $article);
+        $this->authorize('reject', $article);
 
         if (!$article->isPending()) {
             return back()->with('error', 'Only pending articles can be rejected.');
@@ -293,9 +308,12 @@ class ArticleController extends Controller
     /**
      * Publish a draft or rejected article (Admin only).
      */
-    public function publish(Article $article)
+    public function publish(Request $request, Article $article)
     {
         $this->authorize('publish', $article);
+
+        /** @var User $user */
+        $user = $request->user();
 
         if ($article->isPublished()) {
             return back()->with('error', 'Article is already published.');
@@ -303,7 +321,7 @@ class ArticleController extends Controller
 
         $article->update([
             'status'       => 'published',
-            'approved_by'  => auth()->id(),
+            'approved_by'  => $user->id,
             'published_at' => now(),
         ]);
 
@@ -313,20 +331,99 @@ class ArticleController extends Controller
     }
 
     /**
+     * Build the persisted article payload from validated form input.
+     */
+    private function buildArticlePayload(array $validated, ?Article $article = null): array
+    {
+        return [
+            'title'          => trim($validated['title']),
+            'slug'           => $this->resolveSlug($validated, $article),
+            'excerpt'        => trim($validated['excerpt']),
+            'content'        => HtmlSanitizer::clean($validated['content']),
+            'featured_image' => $this->normalizeOptionalValue($validated['featured_image'] ?? null),
+            'published_at'   => $validated['published_at'] ?? null,
+        ];
+    }
+
+    /**
+     * Build the persisted metadata payload from validated form input.
+     */
+    private function buildMetaPayload(array $validated): array
+    {
+        return [
+            'meta_title'       => $this->normalizeOptionalValue($validated['meta_title'] ?? $validated['title']),
+            'meta_description' => $this->normalizeOptionalValue($validated['meta_description'] ?? $validated['excerpt']),
+            'meta_keywords'    => $this->normalizeOptionalValue($validated['meta_keywords'] ?? null),
+            'og_image'         => $this->normalizeOptionalValue($validated['og_image'] ?? ($validated['featured_image'] ?? null)),
+            'canonical_url'    => $this->normalizeOptionalValue($validated['canonical_url'] ?? null),
+        ];
+    }
+
+    /**
+     * Resolve the canonical slug for create and update flows.
+     */
+    private function resolveSlug(array $validated, ?Article $article = null): string
+    {
+        if (!empty($validated['slug'])) {
+            return $this->generateUniqueSlug($validated['slug'], $article?->id);
+        }
+
+        if ($article !== null && $article->title === $validated['title'] && !empty($article->slug)) {
+            return $article->slug;
+        }
+
+        return $this->generateUniqueSlug($validated['title'], $article?->id);
+    }
+
+    /**
      * Generate a unique slug for the article.
      */
-    private function generateUniqueSlug(string $title): string
+    private function generateUniqueSlug(string $title, ?int $ignoreId = null): string
     {
         $slug = Str::slug($title);
         $originalSlug = $slug;
         $count = 1;
 
-        while (Article::where('slug', $slug)->exists()) {
+        while (Article::where('slug', $slug)
+            ->when($ignoreId !== null, fn ($query) => $query->whereKeyNot($ignoreId))
+            ->exists()) {
             $slug = "{$originalSlug}-{$count}";
             $count++;
         }
 
         return $slug;
+    }
+
+    /**
+     * Normalize optional string values before persistence.
+     */
+    private function normalizeOptionalValue(?string $value): ?string
+    {
+        if ($value === null) {
+            return null;
+        }
+
+        $normalized = trim($value);
+
+        return $normalized === '' ? null : $normalized;
+    }
+
+    /**
+     * Serialize a managed article row with explicit UI permissions.
+     */
+    private function serializeArticleForManagement(Article $article, User $user): array
+    {
+        return array_merge($article->toArray(), [
+            'permissions' => [
+                'view'    => $user->can('view', $article),
+                'update'  => $user->can('update', $article),
+                'delete'  => $user->can('delete', $article),
+                'submit'  => $user->can('submitForApproval', $article),
+                'approve' => $user->can('approve', $article),
+                'reject'  => $user->can('reject', $article),
+                'publish' => $user->can('publish', $article),
+            ],
+        ]);
     }
 
     /**

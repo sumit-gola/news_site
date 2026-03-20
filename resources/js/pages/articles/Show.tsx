@@ -1,19 +1,13 @@
-import { Head, Link, router, usePage } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import { Eye, Send, ThumbsDown, ThumbsUp } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import AppLayout from '@/layouts/app-layout';
-import type { Article, BreadcrumbItem, User } from '@/types';
+import type { Article, BreadcrumbItem } from '@/types';
 
 type Props = {
     article: Article;
-};
-
-type PageProps = {
-    auth: {
-        user: User;
-    };
 };
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -23,11 +17,7 @@ const breadcrumbs: BreadcrumbItem[] = [
 ];
 
 export default function ShowArticle({ article }: Props) {
-    const { auth } = usePage<PageProps>().props;
-    const roles = auth.user.roles?.map((role) => role.name) ?? [];
-    const isAdmin = roles.includes('admin');
-    const isManager = roles.includes('manager');
-    const canApprove = isAdmin || isManager;
+    const permissions = article.permissions;
 
     const action = (type: 'submit' | 'approve' | 'reject' | 'publish') => {
         const map = {
@@ -61,8 +51,8 @@ export default function ShowArticle({ article }: Props) {
                             <span>Published: {article.published_at ? new Date(article.published_at).toLocaleString() : 'Not published'}</span>
                         </div>
 
-                        {article.featured_image && (
-                            <img src={article.featured_image} alt={article.title} className="max-h-80 w-full rounded-lg object-cover" />
+                        {article.featured_image_url && (
+                            <img src={article.featured_image_url} alt={article.title} className="max-h-80 w-full rounded-lg object-cover" />
                         )}
 
                         <div className="prose max-w-none dark:prose-invert" dangerouslySetInnerHTML={{ __html: article.content }} />
@@ -74,32 +64,36 @@ export default function ShowArticle({ article }: Props) {
                         </div>
 
                         <div className="flex flex-wrap justify-between gap-3">
+                            {permissions?.update ? (
                             <Button variant="outline" asChild>
                                 <Link href={`/articles/${article.id}/edit`}>Edit Article</Link>
                             </Button>
+                            ) : <span />}
 
                             <div className="flex flex-wrap gap-2">
-                                {article.status === 'draft' && (
+                                {permissions?.submit && article.status === 'draft' && (
                                     <Button onClick={() => action('submit')}>
                                         <Send className="mr-1.5 size-4" />
                                         Submit For Review
                                     </Button>
                                 )}
 
-                                {article.status === 'pending' && canApprove && (
+                                {article.status === 'pending' && permissions?.approve && (
                                     <>
                                         <Button onClick={() => action('approve')}>
                                             <ThumbsUp className="mr-1.5 size-4" />
                                             Approve
                                         </Button>
+                                        {permissions.reject && (
                                         <Button variant="destructive" onClick={() => action('reject')}>
                                             <ThumbsDown className="mr-1.5 size-4" />
                                             Reject
                                         </Button>
+                                        )}
                                     </>
                                 )}
 
-                                {isAdmin && article.status !== 'published' && (
+                                {permissions?.publish && article.status !== 'published' && (
                                     <Button variant="secondary" onClick={() => action('publish')}>Publish Now</Button>
                                 )}
                             </div>
