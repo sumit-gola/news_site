@@ -6,7 +6,7 @@ use HTMLPurifier;
 use HTMLPurifier_Config;
 
 /**
- * Thin wrapper around HTMLPurifier for sanitising rich-text (CKEditor) output
+ * Thin wrapper around HTMLPurifier for sanitising rich-text editor output
  * before it is persisted to the database.
  *
  * Usage:
