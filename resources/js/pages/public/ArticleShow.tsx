@@ -137,29 +137,28 @@ export default function ArticleShow({ article, related, trending, navCategories 
 
     return (
         <PublicLayout navCategories={navCategories}>
-            <Head>
-                <title>{article.meta?.meta_title ?? article.title}</title>
-                {article.meta?.meta_description && (
+            <Head title={article.meta?.meta_title ?? article.title}>
+                {article.meta?.meta_description ? (
                     <meta name="description" content={article.meta.meta_description} />
-                )}
-                {article.meta?.meta_keywords && (
+                ) : undefined}
+                {article.meta?.meta_keywords ? (
                     <meta name="keywords" content={article.meta.meta_keywords} />
-                )}
-                {article.meta?.canonical_url && (
+                ) : undefined}
+                {article.meta?.canonical_url ? (
                     <link rel="canonical" href={article.meta.canonical_url} />
-                )}
+                ) : undefined}
                 {/* Open Graph */}
                 <meta property="og:title" content={article.meta?.meta_title ?? article.title} />
-                {article.meta?.meta_description && (
+                {article.meta?.meta_description ? (
                     <meta property="og:description" content={article.meta.meta_description} />
-                )}
-                {(article.meta?.og_image ?? article.featured_image_url) && (
+                ) : undefined}
+                {(article.meta?.og_image ?? article.featured_image_url) ? (
                     <meta property="og:image" content={(article.meta?.og_image ?? article.featured_image_url) as string} />
-                )}
+                ) : undefined}
                 <meta property="og:type" content="article" />
-                {article.published_at && (
+                {article.published_at ? (
                     <meta property="article:published_time" content={article.published_at} />
-                )}
+                ) : undefined}
             </Head>
 
             <div className="fixed left-0 right-0 top-[58px] z-40 h-1 bg-transparent md:top-[104px]">

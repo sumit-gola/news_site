@@ -17,8 +17,7 @@ type Props = {
 export default function StaticPage({ page, navCategories }: Props) {
     return (
         <PublicLayout navCategories={navCategories}>
-            <Head>
-                <title>{page.title}</title>
+            <Head title={page.title}>
                 <meta name="description" content={page.description} />
             </Head>
 

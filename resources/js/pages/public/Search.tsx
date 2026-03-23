@@ -114,13 +114,16 @@ function Pagination({ data, query }: { data: Paginated<Article>; query: string }
     );
 }
 
-export default function SearchPage({ results, query: initialQuery, filters, categories, navCategories }: Props) {
+export default function SearchPage({ results, query: initialQuery, filters = {}, categories, navCategories }: Props) {
+    const selectedCategory = typeof filters?.category === 'string' ? filters.category : '';
+    const selectedSort     = typeof filters?.sort     === 'string' ? filters.sort     : 'latest';
+
     const [q, setQ] = useState(initialQuery);
 
     const handleSearch = (e: React.FormEvent) => {
         e.preventDefault();
         if (q.trim()) {
-            router.get('/search', { q: q.trim(), ...filters });
+            router.get('/search', { q: q.trim() });
         }
     };
 
@@ -130,7 +133,12 @@ export default function SearchPage({ results, query: initialQuery, filters, cate
     };
 
     const updateFilters = (next: { category?: string; sort?: string }) => {
-        router.get('/search', { q: initialQuery || undefined, ...filters, ...next }, { preserveState: true, preserveScroll: true, replace: true });
+        const merged = { ...filters, ...next };
+        const params: Record<string, string> = {};
+        if (initialQuery) params.q = initialQuery;
+        if (typeof merged.category === 'string' && merged.category) params.category = merged.category;
+        if (typeof merged.sort     === 'string' && merged.sort)     params.sort     = merged.sort;
+        router.get('/search', params, { preserveState: true, preserveScroll: true, replace: true });
     };
 
     return (
@@ -182,7 +190,7 @@ export default function SearchPage({ results, query: initialQuery, filters, cate
                             <label htmlFor="category" className="text-xs font-semibold uppercase tracking-wide text-gray-500">Category</label>
                             <select
                                 id="category"
-                                value={filters.category ?? ''}
+                                value={selectedCategory}
                                 onChange={(e) => updateFilters({ category: e.target.value || undefined })}
                                 className="mt-1 h-9 w-full rounded-md border border-gray-300 bg-white px-3 text-sm dark:border-gray-700 dark:bg-gray-800"
                             >
@@ -196,7 +204,7 @@ export default function SearchPage({ results, query: initialQuery, filters, cate
                             <label htmlFor="sort" className="text-xs font-semibold uppercase tracking-wide text-gray-500">Sort</label>
                             <select
                                 id="sort"
-                                value={filters.sort ?? 'latest'}
+                                value={selectedSort}
                                 onChange={(e) => updateFilters({ sort: e.target.value })}
                                 className="mt-1 h-9 w-full rounded-md border border-gray-300 bg-white px-3 text-sm dark:border-gray-700 dark:bg-gray-800"
                             >

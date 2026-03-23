@@ -93,20 +93,34 @@ function SkeletonCard({ listMode }: { listMode: boolean }) {
     );
 }
 
-export default function NewsIndex({ articles, filters, categories, tags, authors, navCategories }: Props) {
+export default function NewsIndex({ articles, filters = {} as Filters, categories, tags, authors, navCategories }: Props) {
+    const selectedQ        = typeof filters?.q         === 'string' ? filters.q         : '';
+    const selectedCategory = typeof filters?.category  === 'string' ? filters.category  : '';
+    const selectedTag      = typeof filters?.tag       === 'string' ? filters.tag       : '';
+    const selectedAuthor   = typeof filters?.author    === 'string' ? filters.author    : '';
+    const selectedSort     = typeof filters?.sort      === 'string' ? filters.sort      : 'latest';
+    const selectedFromDate = typeof filters?.from_date === 'string' ? filters.from_date : '';
+    const selectedToDate   = typeof filters?.to_date   === 'string' ? filters.to_date   : '';
+
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
     const [filterOpen, setFilterOpen] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
-    const [localSearch, setLocalSearch] = useState(filters.q ?? '');
+    const [localSearch, setLocalSearch] = useState(selectedQ);
 
     const updateFilters = (next: Partial<Filters>) => {
         setIsLoading(true);
-        router.get('/news', { ...filters, ...next }, { preserveState: true, preserveScroll: true, replace: true });
+
+        const merged = { ...filters, ...next } as Record<string, unknown>;
+        const params = Object.fromEntries(
+            Object.entries(merged).filter(([, v]) => typeof v === 'string' && v),
+        ) as Record<string, string>;
+
+        router.get('/news', params, { preserveState: true, preserveScroll: true, replace: true });
     };
 
     useEffect(() => {
         const timer = setTimeout(() => {
-            if (localSearch !== (filters.q ?? '')) {
+            if (localSearch !== selectedQ) {
                 updateFilters({ q: localSearch || undefined });
             }
         }, 350);
@@ -120,7 +134,8 @@ export default function NewsIndex({ articles, filters, categories, tags, authors
     }, [articles.current_page, articles.total]);
 
     useEffect(() => {
-        setLocalSearch(filters.q ?? '');
+        setLocalSearch(selectedQ);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [filters.q]);
 
     const listMode = viewMode === 'list';
@@ -181,7 +196,7 @@ export default function NewsIndex({ articles, filters, categories, tags, authors
                         <label htmlFor="category" className="text-xs font-semibold uppercase tracking-wide text-gray-500">Category</label>
                         <select
                             id="category"
-                            value={filters.category ?? ''}
+                            value={selectedCategory}
                             onChange={(e) => updateFilters({ category: e.target.value || undefined })}
                             className="mt-1 h-9 w-full rounded-md border border-gray-300 bg-white px-3 text-sm dark:border-gray-700 dark:bg-gray-800"
                         >
@@ -196,7 +211,7 @@ export default function NewsIndex({ articles, filters, categories, tags, authors
                         <label htmlFor="tag" className="text-xs font-semibold uppercase tracking-wide text-gray-500">Tag</label>
                         <select
                             id="tag"
-                            value={filters.tag ?? ''}
+                            value={selectedTag}
                             onChange={(e) => updateFilters({ tag: e.target.value || undefined })}
                             className="mt-1 h-9 w-full rounded-md border border-gray-300 bg-white px-3 text-sm dark:border-gray-700 dark:bg-gray-800"
                         >
@@ -211,7 +226,7 @@ export default function NewsIndex({ articles, filters, categories, tags, authors
                         <label htmlFor="author" className="text-xs font-semibold uppercase tracking-wide text-gray-500">Author</label>
                         <select
                             id="author"
-                            value={filters.author ?? ''}
+                            value={selectedAuthor}
                             onChange={(e) => updateFilters({ author: e.target.value || undefined })}
                             className="mt-1 h-9 w-full rounded-md border border-gray-300 bg-white px-3 text-sm dark:border-gray-700 dark:bg-gray-800"
                         >
@@ -226,7 +241,7 @@ export default function NewsIndex({ articles, filters, categories, tags, authors
                         <label htmlFor="sort" className="text-xs font-semibold uppercase tracking-wide text-gray-500">Sort</label>
                         <select
                             id="sort"
-                            value={filters.sort ?? 'latest'}
+                            value={selectedSort}
                             onChange={(e) => updateFilters({ sort: e.target.value || undefined })}
                             className="mt-1 h-9 w-full rounded-md border border-gray-300 bg-white px-3 text-sm dark:border-gray-700 dark:bg-gray-800"
                         >
@@ -242,7 +257,7 @@ export default function NewsIndex({ articles, filters, categories, tags, authors
                         <input
                             id="from_date"
                             type="date"
-                            value={filters.from_date ?? ''}
+                            value={selectedFromDate}
                             onChange={(e) => updateFilters({ from_date: e.target.value || undefined })}
                             className="mt-1 h-9 w-full rounded-md border border-gray-300 bg-white px-3 text-sm dark:border-gray-700 dark:bg-gray-800"
                         />
@@ -253,7 +268,7 @@ export default function NewsIndex({ articles, filters, categories, tags, authors
                         <input
                             id="to_date"
                             type="date"
-                            value={filters.to_date ?? ''}
+                            value={selectedToDate}
                             onChange={(e) => updateFilters({ to_date: e.target.value || undefined })}
                             className="mt-1 h-9 w-full rounded-md border border-gray-300 bg-white px-3 text-sm dark:border-gray-700 dark:bg-gray-800"
                         />

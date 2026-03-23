@@ -9,15 +9,21 @@ type Props = {
     navCategories: Category[];
 };
 
-export default function TagPage({ tag, articles, filters, navCategories }: Props) {
+export default function TagPage({ tag, articles, filters = {}, navCategories }: Props) {
+    const selectedSort = typeof filters?.sort === 'string' ? filters.sort : 'latest';
+
     const updateFilters = (next: { sort?: string }) => {
-        router.get(`/tag/${tag.slug}`, { ...filters, ...next }, { preserveState: true, preserveScroll: true, replace: true });
+        const merged = { ...filters, ...next } as Record<string, unknown>;
+        const params = Object.fromEntries(
+            Object.entries(merged).filter(([, v]) => typeof v === 'string' && v),
+        ) as Record<string, string>;
+
+        router.get(`/tag/${tag.slug}`, params, { preserveState: true, preserveScroll: true, replace: true });
     };
 
     return (
         <PublicLayout navCategories={navCategories}>
-            <Head>
-                <title>Tag: {tag.name}</title>
+            <Head title={`${tag.name} — Tag`}>
                 <meta name="description" content={`Read latest stories tagged with ${tag.name}.`} />
             </Head>
 
@@ -31,7 +37,7 @@ export default function TagPage({ tag, articles, filters, navCategories }: Props
                         <label htmlFor="sort" className="mr-2 text-xs font-semibold uppercase tracking-wide text-gray-500">Sort</label>
                         <select
                             id="sort"
-                            value={filters.sort ?? 'latest'}
+                            value={selectedSort}
                             onChange={(e) => updateFilters({ sort: e.target.value })}
                             className="h-9 rounded-md border border-gray-300 bg-white px-3 text-sm dark:border-gray-700 dark:bg-gray-800"
                         >
