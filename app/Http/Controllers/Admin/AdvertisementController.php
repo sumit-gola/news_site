@@ -3,16 +3,19 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\AdAuditEvent;
 use App\Models\AdSlot;
 use App\Models\Advertisement;
 use App\Models\Advertiser;
 use App\Models\Category;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
-use Illuminate\Validation\ValidationException;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -20,28 +23,83 @@ class AdvertisementController extends Controller
 {
     public function index(Request $request): Response
     {
+        $perPage = min(max((int) $request->integer('per_page', 15), 10), 100);
+        $sortBy = (string) $request->string('sort_by', 'priority');
+        $sortDir = $request->string('sort_dir', 'desc')->toString() === 'asc' ? 'asc' : 'desc';
+        $allowedSort = ['priority', 'start_date', 'end_date', 'created_at', 'total_impressions', 'total_clicks', 'title'];
+
         $ads = Advertisement::query()
             ->with(['advertiser:id,name', 'slot:id,name'])
             ->when($request->status, fn ($q) => $q->where('status', $request->status))
+            ->when($request->workflow_status, fn ($q) => $q->where('workflow_status', $request->workflow_status))
+            ->when($request->ad_type, fn ($q) => $q->where('ad_type', $request->ad_type))
             ->when($request->position, fn ($q) => $q->where('position', $request->position))
             ->when($request->page, fn ($q) => $q->whereJsonContains('pages', $request->page))
+            ->when($request->advertiser_id, fn ($q) => $q->where('advertiser_id', $request->integer('advertiser_id')))
+            ->when($request->slot_id, fn ($q) => $q->where('ad_slot_id', $request->integer('slot_id')))
+            ->when($request->has_media !== null && $request->has_media !== '', function (Builder $q) use ($request): void {
+                if ($request->boolean('has_media')) {
+                    $q->whereNotNull('image_path');
+                } else {
+                    $q->whereNull('image_path');
+                }
+            })
+            ->when($request->is_pinned !== null && $request->is_pinned !== '', fn ($q) => $q->where('is_pinned', $request->boolean('is_pinned')))
             ->when($request->from_date, fn ($q) => $q->whereDate('start_date', '>=', $request->from_date))
             ->when($request->to_date, fn ($q) => $q->whereDate('end_date', '<=', $request->to_date))
             ->when($request->search, fn ($q) => $q->where('title', 'like', '%' . trim((string) $request->search) . '%'))
-            ->orderByDesc('priority')
-            ->latest('id')
-            ->paginate(15)
+            ->orderBy(in_array($sortBy, $allowedSort, true) ? $sortBy : 'priority', $sortDir)
+            ->orderByDesc('id')
+            ->paginate($perPage)
             ->withQueryString()
             ->through(fn (Advertisement $ad) => $this->serializeAd($ad));
 
+        $underperforming = Advertisement::query()
+            ->where('status', 'active')
+            ->where('total_impressions', '>', 100)
+            ->whereRaw('(CASE WHEN total_impressions > 0 THEN (total_clicks * 100.0) / total_impressions ELSE 0 END) < 0.5')
+            ->count();
+
+        $expiringSoon = Advertisement::query()
+            ->where('status', 'active')
+            ->whereBetween('end_date', [now(), now()->addDays(7)])
+            ->count();
+
         return Inertia::render('admin/advertisements/Index', [
             'ads' => $ads,
-            'filters' => $request->only(['status', 'position', 'page', 'from_date', 'to_date', 'search']),
+            'filters' => $request->only([
+                'status',
+                'workflow_status',
+                'ad_type',
+                'position',
+                'page',
+                'slot_id',
+                'advertiser_id',
+                'from_date',
+                'to_date',
+                'search',
+                'has_media',
+                'is_pinned',
+                'sort_by',
+                'sort_dir',
+                'per_page',
+            ]),
             'summary' => [
                 'total' => Advertisement::count(),
                 'active' => Advertisement::active()->count(),
                 'scheduled' => Advertisement::where('status', 'active')->where('start_date', '>', now())->count(),
                 'expired' => Advertisement::whereNotNull('end_date')->where('end_date', '<', now())->count(),
+                'underperforming' => $underperforming,
+                'expiring_soon' => $expiringSoon,
+            ],
+            'options' => [
+                'advertisers' => Advertiser::query()->orderBy('name')->get(['id', 'name']),
+                'slots' => AdSlot::query()->orderBy('name')->get(['id', 'name', 'position', 'page']),
+            ],
+            'presets' => [
+                ['id' => 'active_home', 'label' => 'Active Homepage Ads', 'filters' => ['status' => 'active', 'page' => 'home']],
+                ['id' => 'expiring_7d', 'label' => 'Expiring in 7 days', 'filters' => ['status' => 'active', 'to_date' => now()->addDays(7)->toDateString()]],
+                ['id' => 'underperforming', 'label' => 'Underperforming', 'filters' => ['status' => 'active', 'sort_by' => 'total_clicks', 'sort_dir' => 'asc']],
             ],
         ]);
     }
@@ -52,15 +110,17 @@ class AdvertisementController extends Controller
             'advertisers' => Advertiser::query()->where('is_active', true)->orderBy('name')->get(['id', 'name', 'email', 'phone']),
             'categories' => Category::query()->active()->orderBy('name')->get(['id', 'name']),
             'slots' => AdSlot::query()->where('is_active', true)->orderBy('name')->get(['id', 'name', 'position', 'page']),
+            'fallbackAds' => Advertisement::query()->orderBy('title')->limit(200)->get(['id', 'title']),
         ]);
     }
 
     public function store(Request $request): RedirectResponse
     {
         $payload = $this->validateAndNormalize($request);
-        Advertisement::create($payload);
+        $ad = Advertisement::create($payload);
+        $this->audit($ad, 'created', ['status' => $ad->status]);
 
-        return redirect()->route('admin.advertisements.index')->with('success', 'Advertisement created successfully.');
+        return redirect('/admin/advertisements')->with('success', 'Advertisement created successfully.');
     }
 
     public function edit(Advertisement $advertisement): Response
@@ -86,11 +146,38 @@ class AdvertisementController extends Controller
                 'end_date' => optional($advertisement->end_date)?->format('Y-m-d\TH:i'),
                 'priority' => $advertisement->priority,
                 'rotation_type' => $advertisement->rotation_type,
-                'status' => $advertisement->status,
+                'status' => in_array($advertisement->status, ['paused', 'archived'], true) ? 'inactive' : $advertisement->status,
+                'workflow_status' => $advertisement->workflow_status ?? 'draft',
+                'is_pinned' => (bool) $advertisement->is_pinned,
+                'is_house_ad' => (bool) $advertisement->is_house_ad,
+                'is_fallback' => (bool) $advertisement->is_fallback,
+                'fallback_ad_id' => $advertisement->fallback_ad_id,
+                'frequency_cap_type' => $advertisement->frequency_cap_type ?? 'none',
+                'frequency_cap_value' => $advertisement->frequency_cap_value,
+                'device_targets' => $advertisement->device_targets ?? ['desktop', 'tablet', 'mobile'],
+                'geo_countries' => $advertisement->geo_countries ?? [],
+                'language_locales' => $advertisement->language_locales ?? [],
+                'audience_tags' => $advertisement->audience_tags ?? [],
+                'utm_source' => data_get($advertisement->utm_params, 'source', ''),
+                'utm_medium' => data_get($advertisement->utm_params, 'medium', ''),
+                'utm_campaign' => data_get($advertisement->utm_params, 'campaign', ''),
+                'utm_term' => data_get($advertisement->utm_params, 'term', ''),
+                'utm_content' => data_get($advertisement->utm_params, 'content', ''),
+                'recurrence_type' => $advertisement->recurrence_type ?? 'always',
+                'recurrence_days' => $advertisement->recurrence_days ?? [],
+                'reviewer_notes' => $advertisement->reviewer_notes ?? '',
+                'internal_comments' => $advertisement->internal_comments ?? '',
+                'supported_sizes' => $advertisement->supported_sizes ?? [],
+                'variant_enabled' => (bool) $advertisement->variant_enabled,
+                'variant_split' => $advertisement->variant_split ?? 50,
+                'winner_metric' => $advertisement->winner_metric ?? 'ctr',
+                'video_embed_url' => $advertisement->video_embed_url ?? '',
             ],
             'advertisers' => Advertiser::query()->where('is_active', true)->orderBy('name')->get(['id', 'name', 'email', 'phone']),
             'categories' => Category::query()->active()->orderBy('name')->get(['id', 'name']),
             'slots' => AdSlot::query()->where('is_active', true)->orderBy('name')->get(['id', 'name', 'position', 'page']),
+            'fallbackAds' => Advertisement::query()->whereKeyNot($advertisement->id)->orderBy('title')->limit(200)->get(['id', 'title']),
+            'events' => $advertisement->auditEvents()->limit(20)->get(['id', 'event_type', 'meta', 'created_at']),
         ]);
     }
 
@@ -98,8 +185,9 @@ class AdvertisementController extends Controller
     {
         $payload = $this->validateAndNormalize($request, $advertisement);
         $advertisement->update($payload);
+        $this->audit($advertisement, 'updated', ['status' => $advertisement->status]);
 
-        return redirect()->route('admin.advertisements.index')->with('success', 'Advertisement updated successfully.');
+        return redirect('/admin/advertisements')->with('success', 'Advertisement updated successfully.');
     }
 
     public function destroy(Advertisement $advertisement): RedirectResponse
@@ -108,6 +196,7 @@ class AdvertisementController extends Controller
             Storage::disk('public')->delete($advertisement->image_path);
         }
 
+        $this->audit($advertisement, 'deleted', ['title' => $advertisement->title]);
         $advertisement->delete();
 
         return back()->with('success', 'Advertisement deleted successfully.');
@@ -115,11 +204,76 @@ class AdvertisementController extends Controller
 
     public function toggleStatus(Advertisement $advertisement): RedirectResponse
     {
+        $next = $advertisement->status === 'active' ? 'inactive' : 'active';
         $advertisement->update([
-            'status' => $advertisement->status === 'active' ? 'paused' : 'active',
+            'status' => $next,
+            'workflow_status' => $next === 'active' ? 'approved' : 'paused',
         ]);
+        $this->audit($advertisement, 'status_toggled', ['status' => $next]);
 
         return back()->with('success', 'Advertisement status updated.');
+    }
+
+    public function bulkAction(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'action' => ['required', Rule::in(['activate', 'pause', 'archive', 'delete', 'duplicate', 'pin', 'unpin', 'move_slot', 'change_priority'])],
+            'ids' => ['required', 'array', 'min:1'],
+            'ids.*' => ['integer', 'exists:advertisements,id'],
+            'slot_id' => ['nullable', 'integer', 'exists:ad_slots,id'],
+            'priority' => ['nullable', 'integer', 'min:1', 'max:999'],
+        ]);
+
+        $ads = Advertisement::query()->whereIn('id', $validated['ids'])->get();
+        $count = $ads->count();
+
+        foreach ($ads as $ad) {
+            switch ($validated['action']) {
+                case 'activate':
+                    $ad->update(['status' => 'active', 'workflow_status' => 'approved']);
+                    break;
+                case 'pause':
+                    $ad->update(['status' => 'inactive', 'workflow_status' => 'paused']);
+                    break;
+                case 'archive':
+                    $ad->update(['status' => 'inactive', 'workflow_status' => 'archived']);
+                    break;
+                case 'pin':
+                    $ad->update(['is_pinned' => true]);
+                    break;
+                case 'unpin':
+                    $ad->update(['is_pinned' => false]);
+                    break;
+                case 'move_slot':
+                    if (!empty($validated['slot_id'])) {
+                        $ad->update(['ad_slot_id' => (int) $validated['slot_id']]);
+                    }
+                    break;
+                case 'change_priority':
+                    if (!empty($validated['priority'])) {
+                        $ad->update(['priority' => (int) $validated['priority']]);
+                    }
+                    break;
+                case 'duplicate':
+                    $clone = $ad->replicate();
+                    $clone->title = $ad->title . ' (Copy)';
+                    $clone->slug = Str::slug($clone->title . '-' . Str::random(6));
+                    $clone->status = 'inactive';
+                    $clone->save();
+                    $this->audit($clone, 'duplicated', ['source_id' => $ad->id]);
+                    break;
+                case 'delete':
+                    $this->audit($ad, 'deleted_bulk', ['title' => $ad->title]);
+                    $ad->delete();
+                    break;
+            }
+
+            if ($validated['action'] !== 'delete') {
+                $this->audit($ad, 'bulk_' . $validated['action'], ['id' => $ad->id]);
+            }
+        }
+
+        return back()->with('success', "Bulk action applied to {$count} ad(s).");
     }
 
     private function validateAndNormalize(Request $request, ?Advertisement $advertisement = null): array
@@ -128,12 +282,14 @@ class AdvertisementController extends Controller
             'title' => ['required', 'string', 'max:190'],
             'advertiser_id' => ['nullable', 'exists:advertisers,id'],
             'ad_slot_id' => ['nullable', 'exists:ad_slots,id'],
+            'fallback_ad_id' => ['nullable', 'integer', 'exists:advertisements,id'],
             'client_name' => ['nullable', 'string', 'max:120'],
             'client_email' => ['nullable', 'email', 'max:190'],
             'client_phone' => ['nullable', 'string', 'max:40'],
             'ad_type' => ['required', Rule::in(['image', 'html', 'script'])],
             'image_file' => ['nullable', 'image', 'max:4096'],
             'image_path' => ['nullable', 'string', 'max:500'],
+            'video_embed_url' => ['nullable', 'url', 'max:500'],
             'html_code' => ['nullable', 'string'],
             'script_code' => ['nullable', 'string'],
             'target_url' => ['nullable', 'url', 'max:500'],
@@ -145,11 +301,40 @@ class AdvertisementController extends Controller
             'pages.*' => ['string', Rule::in(['home', 'article', 'category', 'search'])],
             'category_ids' => ['nullable', 'array'],
             'category_ids.*' => ['integer', 'exists:categories,id'],
+            'device_targets' => ['nullable', 'array'],
+            'device_targets.*' => ['string', Rule::in(['desktop', 'tablet', 'mobile'])],
+            'geo_countries' => ['nullable', 'array'],
+            'geo_countries.*' => ['string', 'size:2'],
+            'language_locales' => ['nullable', 'array'],
+            'language_locales.*' => ['string', 'max:10'],
+            'audience_tags' => ['nullable', 'array'],
+            'audience_tags.*' => ['string', 'max:40'],
             'start_date' => ['nullable', 'date'],
             'end_date' => ['nullable', 'date', 'after_or_equal:start_date'],
+            'recurrence_type' => ['nullable', Rule::in(['always', 'weekdays', 'weekends', 'custom'])],
+            'recurrence_days' => ['nullable', 'array'],
+            'recurrence_days.*' => ['integer', 'between:0,6'],
+            'frequency_cap_type' => ['nullable', Rule::in(['none', 'session', 'day', 'user'])],
+            'frequency_cap_value' => ['nullable', 'integer', 'min:1', 'max:500'],
             'priority' => ['required', 'integer', 'min:1', 'max:999'],
             'rotation_type' => ['required', Rule::in(['sequential', 'random'])],
             'status' => ['required', Rule::in(['active', 'inactive'])],
+            'workflow_status' => ['nullable', Rule::in(['draft', 'pending_review', 'approved', 'rejected', 'active', 'paused', 'archived'])],
+            'reviewer_notes' => ['nullable', 'string'],
+            'internal_comments' => ['nullable', 'string'],
+            'is_pinned' => ['boolean'],
+            'is_house_ad' => ['boolean'],
+            'is_fallback' => ['boolean'],
+            'supported_sizes' => ['nullable', 'array'],
+            'supported_sizes.*' => ['string', 'max:30'],
+            'variant_enabled' => ['boolean'],
+            'variant_split' => ['nullable', 'integer', 'min:1', 'max:99'],
+            'winner_metric' => ['nullable', Rule::in(['ctr', 'clicks', 'impressions'])],
+            'utm_source' => ['nullable', 'string', 'max:120'],
+            'utm_medium' => ['nullable', 'string', 'max:120'],
+            'utm_campaign' => ['nullable', 'string', 'max:120'],
+            'utm_term' => ['nullable', 'string', 'max:120'],
+            'utm_content' => ['nullable', 'string', 'max:120'],
         ]);
 
         if ($validated['ad_type'] === 'image' && !$request->hasFile('image_file') && empty($validated['image_path']) && !$advertisement?->image_path) {
@@ -181,13 +366,16 @@ class AdvertisementController extends Controller
         return [
             'advertiser_id' => $validated['advertiser_id'] ?? null,
             'ad_slot_id' => $validated['ad_slot_id'] ?? null,
+            'fallback_ad_id' => $validated['fallback_ad_id'] ?? null,
             'title' => $validated['title'],
             'slug' => Str::slug($validated['title']),
             'description' => $validated['title'],
             'ad_type' => $validated['ad_type'],
             'image_url' => $validated['image_path'] ?? $advertisement?->image_path,
             'image_path' => $validated['image_path'] ?? $advertisement?->image_path,
-            'video_url' => null,
+            'video_url' => $validated['video_embed_url'] ?? null,
+            'video_embed_url' => $validated['video_embed_url'] ?? null,
+            'has_video' => !empty($validated['video_embed_url']),
             'html_code' => $validated['html_code'] ?? null,
             'script_code' => $validated['script_code'] ?? null,
             'size' => ($validated['width'] ?? null) && ($validated['height'] ?? null)
@@ -203,18 +391,47 @@ class AdvertisementController extends Controller
             'position' => $validated['position'],
             'pages' => $validated['pages'] ?? [],
             'category_ids' => $validated['category_ids'] ?? [],
+            'device_targets' => $validated['device_targets'] ?? ['desktop', 'tablet', 'mobile'],
+            'geo_countries' => array_map('strtoupper', $validated['geo_countries'] ?? []),
+            'language_locales' => $validated['language_locales'] ?? [],
+            'audience_tags' => $validated['audience_tags'] ?? [],
             'start_date' => $validated['start_date'] ?? null,
             'end_date' => $validated['end_date'] ?? null,
+            'recurrence_type' => $validated['recurrence_type'] ?? 'always',
+            'recurrence_days' => $validated['recurrence_days'] ?? [],
+            'frequency_cap_type' => $validated['frequency_cap_type'] ?? 'none',
+            'frequency_cap_value' => $validated['frequency_cap_value'] ?? null,
             'daily_limit' => null,
             'priority' => $validated['priority'],
             'is_responsive' => true,
+            'is_pinned' => $request->boolean('is_pinned'),
+            'is_house_ad' => $request->boolean('is_house_ad'),
+            'is_fallback' => $request->boolean('is_fallback'),
             'targeting' => [
                 'pages' => $validated['pages'] ?? [],
                 'category_ids' => $validated['category_ids'] ?? [],
                 'position' => $validated['position'],
+                'devices' => $validated['device_targets'] ?? ['desktop', 'tablet', 'mobile'],
+                'countries' => $validated['geo_countries'] ?? [],
+                'locales' => $validated['language_locales'] ?? [],
+                'audience_tags' => $validated['audience_tags'] ?? [],
             ],
             'rotation_type' => $validated['rotation_type'],
-            'status' => $validated['status'] === 'inactive' ? 'paused' : $validated['status'],
+            'status' => $validated['status'] === 'active' ? 'active' : 'inactive',
+            'workflow_status' => $validated['workflow_status'] ?? ($validated['status'] === 'active' ? 'approved' : 'draft'),
+            'reviewer_notes' => $validated['reviewer_notes'] ?? null,
+            'internal_comments' => $validated['internal_comments'] ?? null,
+            'supported_sizes' => $validated['supported_sizes'] ?? [],
+            'variant_enabled' => $request->boolean('variant_enabled'),
+            'variant_split' => $validated['variant_split'] ?? 50,
+            'winner_metric' => $validated['winner_metric'] ?? 'ctr',
+            'utm_params' => array_filter([
+                'source' => $validated['utm_source'] ?? null,
+                'medium' => $validated['utm_medium'] ?? null,
+                'campaign' => $validated['utm_campaign'] ?? null,
+                'term' => $validated['utm_term'] ?? null,
+                'content' => $validated['utm_content'] ?? null,
+            ]),
         ];
     }
 
@@ -242,10 +459,29 @@ class AdvertisementController extends Controller
             'end_date' => optional($ad->end_date)?->toDateTimeString(),
             'priority' => $ad->priority,
             'status' => $computedStatus,
-            'raw_status' => in_array($ad->status, ['paused', 'archived'], true) ? 'inactive' : $ad->status,
+            'raw_status' => $ad->status === 'active' ? 'active' : 'inactive',
             'ctr' => $ad->ctr,
             'total_impressions' => $ad->total_impressions,
             'total_clicks' => $ad->total_clicks,
+            'workflow_status' => $ad->workflow_status,
+            'is_pinned' => (bool) $ad->is_pinned,
+            'is_house_ad' => (bool) $ad->is_house_ad,
+            'ad_slot_id' => $ad->ad_slot_id,
+            'advertiser_id' => $ad->advertiser_id,
+            'frequency_cap_type' => $ad->frequency_cap_type,
+            'frequency_cap_value' => $ad->frequency_cap_value,
+            'device_targets' => $ad->device_targets ?? [],
+            'audience_tags' => $ad->audience_tags ?? [],
         ];
+    }
+
+    private function audit(Advertisement $advertisement, string $eventType, array $meta = []): void
+    {
+        AdAuditEvent::query()->create([
+            'advertisement_id' => $advertisement->id,
+            'actor_id' => Auth::id(),
+            'event_type' => $eventType,
+            'meta' => $meta,
+        ]);
     }
 }

@@ -1,12 +1,13 @@
 import { Head } from '@inertiajs/react';
-import AdForm from '@/components/ads/AdForm';
 import AppLayout from '@/layouts/app-layout';
 import type { AdCategoryOption, AdSlotItem, AdvertiserClient, BreadcrumbItem } from '@/types';
+import AdForm from '../../../components/ads/AdForm';
 
 type Props = {
     advertisers: AdvertiserClient[];
     categories: AdCategoryOption[];
     slots: AdSlotItem[];
+    fallbackAds: Array<{ id: number; title: string }>;
 };
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -15,7 +16,7 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Add New Ad', href: '/admin/advertisements/create' },
 ];
 
-export default function CreateAdvertisement({ advertisers, categories, slots }: Props) {
+export default function CreateAdvertisement({ advertisers, categories, slots, fallbackAds }: Props) {
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Create Advertisement" />
@@ -26,6 +27,7 @@ export default function CreateAdvertisement({ advertisers, categories, slots }: 
                     advertisers={advertisers}
                     categories={categories}
                     slots={slots}
+                    fallbackAds={fallbackAds}
                 />
             </div>
         </AppLayout>

@@ -41,6 +41,8 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'verified', 'role:ad
 
     // Advertisement Management
     Route::get('advertisements/analytics', [AdAnalyticsController::class, 'index'])->name('advertisements.analytics');
+    Route::get('advertisements/analytics/export', [AdAnalyticsController::class, 'export'])->name('advertisements.analytics.export');
+    Route::patch('advertisements/bulk-action', [AdvertisementController::class, 'bulkAction'])->name('advertisements.bulk-action');
     Route::patch('advertisements/{advertisement}/toggle-status', [AdvertisementController::class, 'toggleStatus'])->name('advertisements.toggle-status');
     Route::resource('advertisements', AdvertisementController::class);
     Route::resource('advertisers', AdvertiserController::class)->except(['show']);
@@ -90,7 +92,7 @@ Route::middleware(['auth', 'verified', 'role:admin,manager'])->group(function ()
 // ── Reporter Dashboard ────────────────────────────────────────────────────────
 Route::middleware(['auth', 'verified', 'role:admin,manager,reporter'])->group(function () {
     Route::get('reporter/dashboard', function () {
-        $user = auth()->user();
+        $user = request()->user();
 
         return Inertia::render('reporter/dashboard', [
             'stats' => [

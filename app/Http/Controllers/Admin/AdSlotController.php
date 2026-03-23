@@ -20,10 +20,35 @@ class AdSlotController extends Controller
             ])
             ->orderBy('position')
             ->orderBy('name')
-            ->get();
+            ->get()
+            ->map(function (AdSlot $slot): AdSlot {
+                $maxAds = max((int) ($slot->max_ads ?? 1), 1);
+                $slot->setAttribute('fill_rate', round(($slot->active_ads_count / $maxAds) * 100, 2));
+
+                return $slot;
+            });
+
+        $conflicts = AdSlot::query()
+            ->withCount([
+                'advertisements as overlapping_active_count' => fn ($q) => $q
+                    ->where('status', 'active')
+                    ->where(function ($range): void {
+                        $range->whereNull('end_date')->orWhere('end_date', '>=', now());
+                    }),
+            ])
+            ->get()
+            ->filter(fn (AdSlot $slot) => $slot->overlapping_active_count > max((int) ($slot->max_ads ?? 1), 1))
+            ->values()
+            ->map(fn (AdSlot $slot) => [
+                'slot_id' => $slot->id,
+                'name' => $slot->name,
+                'active_ads' => $slot->overlapping_active_count,
+                'max_ads' => max((int) ($slot->max_ads ?? 1), 1),
+            ]);
 
         return Inertia::render('admin/ad-slots/Index', [
             'slots' => $slots,
+            'conflicts' => $conflicts,
         ]);
     }
 

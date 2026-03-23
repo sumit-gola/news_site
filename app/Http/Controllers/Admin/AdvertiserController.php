@@ -27,6 +27,12 @@ class AdvertiserController extends Controller
         return Inertia::render('admin/advertisers/Index', [
             'advertisers' => $advertisers,
             'filters' => $request->only('search'),
+            'summary' => [
+                'total' => Advertiser::count(),
+                'active' => Advertiser::where('is_active', true)->count(),
+                'budget' => (float) Advertiser::sum('monthly_budget'),
+                'spent' => (float) Advertiser::sum('spent_amount'),
+            ],
         ]);
     }
 

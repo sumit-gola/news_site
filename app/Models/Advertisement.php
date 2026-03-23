@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Advertisement extends Model
@@ -45,6 +46,33 @@ class Advertisement extends Model
         'status',
         'total_impressions',
         'total_clicks',
+        'is_pinned',
+        'is_house_ad',
+        'is_fallback',
+        'fallback_ad_id',
+        'workflow_status',
+        'reviewer_notes',
+        'internal_comments',
+        'recurrence_type',
+        'recurrence_days',
+        'frequency_cap_type',
+        'frequency_cap_value',
+        'device_targets',
+        'geo_countries',
+        'language_locales',
+        'audience_tags',
+        'utm_params',
+        'has_video',
+        'video_embed_url',
+        'supported_sizes',
+        'variant_enabled',
+        'variant_a',
+        'variant_b',
+        'variant_split',
+        'winner_metric',
+        'daily_budget',
+        'spent_amount',
+        'last_served_at',
     ];
 
     protected $casts = [
@@ -53,8 +81,23 @@ class Advertisement extends Model
         'pages' => 'array',
         'category_ids' => 'array',
         'targeting' => 'array',
+        'is_pinned' => 'boolean',
+        'is_house_ad' => 'boolean',
+        'is_fallback' => 'boolean',
+        'recurrence_days' => 'array',
+        'device_targets' => 'array',
+        'geo_countries' => 'array',
+        'language_locales' => 'array',
+        'audience_tags' => 'array',
+        'utm_params' => 'array',
+        'has_video' => 'boolean',
+        'supported_sizes' => 'array',
+        'variant_enabled' => 'boolean',
+        'variant_a' => 'array',
+        'variant_b' => 'array',
         'start_date' => 'datetime',
         'end_date' => 'datetime',
+        'last_served_at' => 'datetime',
     ];
 
     protected $appends = ['ctr'];
@@ -72,6 +115,21 @@ class Advertisement extends Model
     public function performance(): HasMany
     {
         return $this->hasMany(AdPerformance::class);
+    }
+
+    public function fallbackAd(): BelongsTo
+    {
+        return $this->belongsTo(self::class, 'fallback_ad_id');
+    }
+
+    public function fallbackFor(): HasOne
+    {
+        return $this->hasOne(self::class, 'fallback_ad_id');
+    }
+
+    public function auditEvents(): HasMany
+    {
+        return $this->hasMany(AdAuditEvent::class)->latest();
     }
 
     public function scopeActive(Builder $query): Builder

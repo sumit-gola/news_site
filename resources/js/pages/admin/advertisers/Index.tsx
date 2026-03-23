@@ -26,6 +26,12 @@ type AdvertiserRow = {
 type Props = {
     advertisers: Paginated<AdvertiserRow>;
     filters: { search?: string };
+    summary: {
+        total: number;
+        active: number;
+        budget: number;
+        spent: number;
+    };
 };
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -33,7 +39,7 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Clients', href: '/admin/advertisers' },
 ];
 
-export default function AdvertisersIndex({ advertisers, filters }: Props) {
+export default function AdvertisersIndex({ advertisers, filters, summary }: Props) {
     const form = useForm({ search: filters.search ?? '' });
 
     const submit = (e: React.FormEvent) => {
@@ -72,6 +78,21 @@ export default function AdvertisersIndex({ advertisers, filters }: Props) {
                         </form>
                     </CardContent>
                 </Card>
+
+                <div className="grid gap-3 md:grid-cols-4">
+                    <Card><CardHeader className="pb-1"><CardTitle className="text-xs">Total Clients</CardTitle></CardHeader><CardContent><p className="text-xl font-bold">{summary.total}</p></CardContent></Card>
+                    <Card><CardHeader className="pb-1"><CardTitle className="text-xs">Active Clients</CardTitle></CardHeader><CardContent><p className="text-xl font-bold">{summary.active}</p></CardContent></Card>
+                    <Card><CardHeader className="pb-1"><CardTitle className="text-xs">Monthly Budget</CardTitle></CardHeader><CardContent><p className="text-xl font-bold">${summary.budget.toFixed(2)}</p></CardContent></Card>
+                    <Card>
+                        <CardHeader className="pb-1"><CardTitle className="text-xs">Spend Progress</CardTitle></CardHeader>
+                        <CardContent>
+                            <p className="text-xl font-bold">${summary.spent.toFixed(2)}</p>
+                            <div className="mt-2 h-1.5 rounded bg-muted">
+                                <div className="h-1.5 rounded bg-primary" style={{ width: `${summary.budget > 0 ? Math.min(100, Math.round((summary.spent / summary.budget) * 100)) : 0}%` }} />
+                            </div>
+                        </CardContent>
+                    </Card>
+                </div>
 
                 <Card>
                     <CardHeader><CardTitle>All Clients</CardTitle></CardHeader>

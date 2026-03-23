@@ -13,6 +13,7 @@ type AdItem = {
     open_in_new_tab: boolean;
     width: number | null;
     height: number | null;
+    video_embed_url?: string | null;
 };
 
 type Props = {
@@ -55,12 +56,15 @@ export default function AdSlot({ position, page, categoryId, className, sticky =
     }, [position, page, categoryId]);
 
     const track = (adId: number, type: 'impression' | 'click') => {
+        const params = new URLSearchParams({ page, position });
         fetch(`/api/ad-slots/${adId}/${type}`, {
             method: 'POST',
             headers: {
                 'X-Requested-With': 'XMLHttpRequest',
                 'X-CSRF-TOKEN': (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content ?? '',
+                'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
             },
+            body: params.toString(),
         }).catch(() => null);
     };
 
@@ -108,6 +112,20 @@ export default function AdSlot({ position, page, categoryId, className, sticky =
                             className="rounded-lg border p-2 shadow-sm"
                             dangerouslySetInnerHTML={{ __html: ad.script_code }}
                         />
+                    );
+                }
+
+                if (ad.video_embed_url) {
+                    return (
+                        <div key={ad.id} className="overflow-hidden rounded-lg border bg-background shadow-sm">
+                            <iframe
+                                title={ad.title}
+                                src={ad.video_embed_url}
+                                className="h-52 w-full"
+                                loading="lazy"
+                                allow="autoplay; encrypted-media; picture-in-picture"
+                            />
+                        </div>
                     );
                 }
 
