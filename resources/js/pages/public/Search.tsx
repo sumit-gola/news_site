@@ -7,6 +7,8 @@ import type { Article, Category, Paginated } from '@/types';
 interface Props {
     results: Paginated<Article> | null;
     query: string;
+    filters: { category?: string; sort?: string };
+    categories: Category[];
     navCategories: Category[];
 }
 
@@ -18,7 +20,14 @@ function timeAgo(date: string) {
     return new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
-function ResultItem({ article }: { article: Article }) {
+function highlightText(text: string, keyword: string): string {
+    if (!keyword.trim()) return text;
+    const escaped = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const regex = new RegExp(`(${escaped})`, 'ig');
+    return text.replace(regex, '<mark class="bg-yellow-200 text-gray-900 px-0.5 rounded">$1</mark>');
+}
+
+function ResultItem({ article, query }: { article: Article; query: string }) {
     const cat = article.categories?.[0];
     return (
         <Link
@@ -46,11 +55,15 @@ function ResultItem({ article }: { article: Article }) {
                         {cat.name}
                     </span>
                 )}
-                <h3 className="mt-1 font-bold leading-snug transition group-hover:text-red-600 dark:group-hover:text-red-400">
-                    {article.title}
-                </h3>
+                <h3
+                    className="mt-1 font-bold leading-snug transition group-hover:text-red-600 dark:group-hover:text-red-400"
+                    dangerouslySetInnerHTML={{ __html: highlightText(article.title, query) }}
+                />
                 {article.excerpt && (
-                    <p className="mt-1 line-clamp-2 text-sm text-gray-500 dark:text-gray-400">{article.excerpt}</p>
+                    <p
+                        className="mt-1 line-clamp-2 text-sm text-gray-500 dark:text-gray-400"
+                        dangerouslySetInnerHTML={{ __html: highlightText(article.excerpt, query) }}
+                    />
                 )}
                 <div className="mt-2 flex items-center gap-3 text-xs text-gray-400">
                     {article.author && <span>{article.author.name}</span>}
@@ -101,19 +114,23 @@ function Pagination({ data, query }: { data: Paginated<Article>; query: string }
     );
 }
 
-export default function SearchPage({ results, query: initialQuery, navCategories }: Props) {
+export default function SearchPage({ results, query: initialQuery, filters, categories, navCategories }: Props) {
     const [q, setQ] = useState(initialQuery);
 
     const handleSearch = (e: React.FormEvent) => {
         e.preventDefault();
         if (q.trim()) {
-            router.get('/search', { q: q.trim() });
+            router.get('/search', { q: q.trim(), ...filters });
         }
     };
 
     const clearSearch = () => {
         setQ('');
         router.get('/search');
+    };
+
+    const updateFilters = (next: { category?: string; sort?: string }) => {
+        router.get('/search', { q: initialQuery || undefined, ...filters, ...next }, { preserveState: true, preserveScroll: true, replace: true });
     };
 
     return (
@@ -159,10 +176,42 @@ export default function SearchPage({ results, query: initialQuery, navCategories
                     </p>
                 )}
 
+                {initialQuery && (
+                    <div className="mt-4 grid gap-3 rounded-xl border border-gray-200 bg-white p-4 md:grid-cols-2 dark:border-gray-800 dark:bg-gray-900">
+                        <div>
+                            <label htmlFor="category" className="text-xs font-semibold uppercase tracking-wide text-gray-500">Category</label>
+                            <select
+                                id="category"
+                                value={filters.category ?? ''}
+                                onChange={(e) => updateFilters({ category: e.target.value || undefined })}
+                                className="mt-1 h-9 w-full rounded-md border border-gray-300 bg-white px-3 text-sm dark:border-gray-700 dark:bg-gray-800"
+                            >
+                                <option value="">All categories</option>
+                                {categories.map((cat) => (
+                                    <option key={cat.id} value={cat.slug}>{cat.name}</option>
+                                ))}
+                            </select>
+                        </div>
+                        <div>
+                            <label htmlFor="sort" className="text-xs font-semibold uppercase tracking-wide text-gray-500">Sort</label>
+                            <select
+                                id="sort"
+                                value={filters.sort ?? 'latest'}
+                                onChange={(e) => updateFilters({ sort: e.target.value })}
+                                className="mt-1 h-9 w-full rounded-md border border-gray-300 bg-white px-3 text-sm dark:border-gray-700 dark:bg-gray-800"
+                            >
+                                <option value="latest">Latest</option>
+                                <option value="popular">Most viewed</option>
+                                <option value="oldest">Oldest</option>
+                            </select>
+                        </div>
+                    </div>
+                )}
+
                 {/* Results list */}
                 <div className="mt-6 space-y-4">
                     {results?.data.map((article) => (
-                        <ResultItem key={article.id} article={article} />
+                        <ResultItem key={article.id} article={article} query={initialQuery} />
                     ))}
                 </div>
 

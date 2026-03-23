@@ -1,6 +1,7 @@
 import { Link, router, usePage } from '@inertiajs/react';
-import { Search, Menu, X, Newspaper, LogIn, LayoutDashboard } from 'lucide-react';
+import { Search, Menu, X, Newspaper, LogIn, LayoutDashboard, Moon, Sun, Home, List, UserCircle } from 'lucide-react';
 import { useState, useRef, type ReactNode } from 'react';
+import { useAppearance } from '@/hooks/use-appearance';
 import type { Auth, Category } from '@/types';
 
 interface Props {
@@ -10,6 +11,7 @@ interface Props {
 
 export default function PublicLayout({ children, navCategories }: Props) {
     const { auth } = usePage<{ auth: Auth }>().props;
+    const { resolvedAppearance, updateAppearance } = useAppearance();
     const [menuOpen, setMenuOpen] = useState(false);
     const [searchOpen, setSearchOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
@@ -92,6 +94,15 @@ export default function PublicLayout({ children, navCategories }: Props) {
 
                     {/* Actions */}
                     <div className="flex items-center gap-2">
+                        <button
+                            onClick={() => updateAppearance(resolvedAppearance === 'dark' ? 'light' : 'dark')}
+                            className="rounded-full p-2 transition hover:bg-gray-100 dark:hover:bg-gray-800"
+                            aria-label="Toggle theme"
+                            title="Toggle dark mode"
+                        >
+                            {resolvedAppearance === 'dark' ? <Sun className="size-5" /> : <Moon className="size-5" />}
+                        </button>
+
                         {/* Search toggle */}
                         <button
                             onClick={toggleSearch}
@@ -200,6 +211,9 @@ export default function PublicLayout({ children, navCategories }: Props) {
                                 <li><Link href="/" className="transition hover:text-white">Home</Link></li>
                                 <li><Link href="/news" className="transition hover:text-white">News</Link></li>
                                 <li><Link href="/search" className="transition hover:text-white">Search</Link></li>
+                                <li><Link href="/about-us" className="transition hover:text-white">About Us</Link></li>
+                                <li><Link href="/contact-us" className="transition hover:text-white">Contact Us</Link></li>
+                                <li><Link href="/privacy-policy" className="transition hover:text-white">Privacy Policy</Link></li>
                                 {auth?.user ? (
                                     <li><Link href="/dashboard" className="transition hover:text-white">Dashboard</Link></li>
                                 ) : (
@@ -214,6 +228,29 @@ export default function PublicLayout({ children, navCategories }: Props) {
                     </div>
                 </div>
             </footer>
+
+            <nav className="fixed bottom-0 left-0 right-0 z-40 border-t border-gray-200 bg-white/95 backdrop-blur md:hidden dark:border-gray-800 dark:bg-gray-900/95">
+                <div className="mx-auto grid max-w-md grid-cols-4">
+                    <Link href="/" className="flex flex-col items-center gap-1 px-2 py-2 text-xs font-medium text-gray-600 hover:text-red-600 dark:text-gray-300 dark:hover:text-red-400">
+                        <Home className="size-4" />
+                        Home
+                    </Link>
+                    <Link href="/news" className="flex flex-col items-center gap-1 px-2 py-2 text-xs font-medium text-gray-600 hover:text-red-600 dark:text-gray-300 dark:hover:text-red-400">
+                        <List className="size-4" />
+                        News
+                    </Link>
+                    <button onClick={toggleSearch} className="flex flex-col items-center gap-1 px-2 py-2 text-xs font-medium text-gray-600 hover:text-red-600 dark:text-gray-300 dark:hover:text-red-400">
+                        <Search className="size-4" />
+                        Search
+                    </button>
+                    <Link href={auth?.user ? '/dashboard' : '/login'} className="flex flex-col items-center gap-1 px-2 py-2 text-xs font-medium text-gray-600 hover:text-red-600 dark:text-gray-300 dark:hover:text-red-400">
+                        <UserCircle className="size-4" />
+                        {auth?.user ? 'Account' : 'Login'}
+                    </Link>
+                </div>
+            </nav>
+
+            <div className="h-14 md:hidden" aria-hidden="true" />
         </div>
     );
 }

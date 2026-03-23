@@ -1,12 +1,13 @@
 import { Head, Link } from '@inertiajs/react';
 import { Clock, Eye, Calendar, User, Tag, Share2, Facebook, Twitter, Link2, ArrowLeft } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import PublicLayout from '@/layouts/public-layout';
 import type { Article, Category } from '@/types';
 
 interface Props {
     article: Article;
     related: Article[];
+    trending: Article[];
     navCategories: Category[];
 }
 
@@ -102,10 +103,37 @@ function ShareButtons({ title, url }: { title: string; url: string }) {
     );
 }
 
-export default function ArticleShow({ article, related, navCategories }: Props) {
+export default function ArticleShow({ article, related, trending, navCategories }: Props) {
     const pageUrl   = typeof window !== 'undefined' ? window.location.href : '';
     const readTime  = article.meta?.read_time ?? Math.max(1, Math.ceil(article.content.split(' ').length / 200));
     const wordCount = article.meta?.word_count ?? article.content.split(' ').length;
+    const bookmarkKey = `bookmark:${article.id}`;
+    const [scrollProgress, setScrollProgress] = useState(0);
+    const [bookmarked, setBookmarked] = useState<boolean>(() => {
+        if (typeof window === 'undefined') return false;
+        return localStorage.getItem(bookmarkKey) === '1';
+    });
+
+    useEffect(() => {
+        const onScroll = () => {
+            const scrollTop = window.scrollY;
+            const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+            const progress = docHeight > 0 ? (scrollTop / docHeight) * 100 : 0;
+            setScrollProgress(Math.min(100, Math.max(0, progress)));
+        };
+
+        onScroll();
+        window.addEventListener('scroll', onScroll, { passive: true });
+        return () => window.removeEventListener('scroll', onScroll);
+    }, []);
+
+    const toggleBookmark = () => {
+        const next = !bookmarked;
+        setBookmarked(next);
+        if (typeof window !== 'undefined') {
+            localStorage.setItem(bookmarkKey, next ? '1' : '0');
+        }
+    };
 
     return (
         <PublicLayout navCategories={navCategories}>
@@ -133,6 +161,10 @@ export default function ArticleShow({ article, related, navCategories }: Props) 
                     <meta property="article:published_time" content={article.published_at} />
                 )}
             </Head>
+
+            <div className="fixed left-0 right-0 top-[58px] z-40 h-1 bg-transparent md:top-[104px]">
+                <div className="h-full bg-red-600 transition-[width] duration-100" style={{ width: `${scrollProgress}%` }} />
+            </div>
 
             {/* Hero Image */}
             {article.featured_image_url && (
@@ -206,6 +238,12 @@ export default function ArticleShow({ article, related, navCategories }: Props) 
                         {/* Share (top) */}
                         <div className="mt-4">
                             <ShareButtons title={article.title} url={pageUrl} />
+                            <button
+                                onClick={toggleBookmark}
+                                className={`mt-3 rounded-full px-3 py-1.5 text-xs font-semibold transition ${bookmarked ? 'bg-red-600 text-white' : 'border border-gray-300 text-gray-600 hover:border-red-400 hover:text-red-600 dark:border-gray-700 dark:text-gray-300'}`}
+                            >
+                                {bookmarked ? 'Bookmarked' : 'Save Article'}
+                            </button>
                         </div>
 
                         {/* Content */}
@@ -221,7 +259,7 @@ export default function ArticleShow({ article, related, navCategories }: Props) 
                                 {article.tags.map((tag) => (
                                     <Link
                                         key={tag.id}
-                                        href={`/search?q=${encodeURIComponent(tag.name)}`}
+                                        href={`/tag/${tag.slug}`}
                                         className="rounded-full border border-gray-300 px-3 py-1 text-xs font-medium text-gray-600 transition hover:border-red-400 hover:text-red-600 dark:border-gray-700 dark:text-gray-400 dark:hover:border-red-500 dark:hover:text-red-400"
                                     >
                                         {tag.name}
@@ -245,6 +283,11 @@ export default function ArticleShow({ article, related, navCategories }: Props) 
                                     <p className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Written by</p>
                                     <p className="mt-0.5 font-bold text-gray-900 dark:text-white">{article.author.name}</p>
                                     <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Staff Reporter</p>
+                                    {article.author_slug && (
+                                        <Link href={`/author/${article.author_slug}`} className="mt-2 inline-block text-xs font-semibold text-red-600 hover:underline dark:text-red-400">
+                                            View Author Page
+                                        </Link>
+                                    )}
                                 </div>
                             </div>
                         )}
@@ -257,7 +300,7 @@ export default function ArticleShow({ article, related, navCategories }: Props) 
                     </article>
 
                     {/* ── Sidebar ──────────────────────────────────────────── */}
-                    <aside className="space-y-8">
+                    <aside className="space-y-8 lg:sticky lg:top-28 lg:self-start">
                         {/* Related articles */}
                         {related.length > 0 && (
                             <div>
@@ -268,6 +311,23 @@ export default function ArticleShow({ article, related, navCategories }: Props) 
                                 <div className="space-y-5">
                                     {related.map((a) => (
                                         <RelatedCard key={a.id} article={a} />
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {trending.length > 0 && (
+                            <div>
+                                <h3 className="mb-4 flex items-center gap-2 text-sm font-bold uppercase tracking-wide">
+                                    <div className="h-4 w-1 rounded-full bg-red-600" />
+                                    Trending Now
+                                </h3>
+                                <div className="space-y-2 rounded-xl border border-gray-200 bg-white p-3 dark:border-gray-800 dark:bg-gray-900">
+                                    {trending.map((item, index) => (
+                                        <Link key={item.id} href={`/news/${item.slug}`} className="group flex gap-3 rounded-md p-2 hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                                            <span className="mt-0.5 text-xs font-black text-red-500">{index + 1}</span>
+                                            <span className="line-clamp-2 text-sm font-medium group-hover:text-red-600 dark:group-hover:text-red-400">{item.title}</span>
+                                        </Link>
                                     ))}
                                 </div>
                             </div>

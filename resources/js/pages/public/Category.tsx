@@ -1,11 +1,13 @@
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import { Clock, Eye, ChevronLeft, ChevronRight } from 'lucide-react';
 import PublicLayout from '@/layouts/public-layout';
-import type { Article, Category, Paginated } from '@/types';
+import type { Article, Category, Paginated, Tag } from '@/types';
 
 interface Props {
     category: Category & { parent?: Category | null; children?: Category[] };
     articles: Paginated<Article>;
+    tags?: Tag[];
+    filters?: { sort?: string | null; tag?: string | null };
     navCategories: Category[];
 }
 
@@ -107,12 +109,31 @@ function Pagination({ data }: { data: Paginated<Article> }) {
     );
 }
 
-export default function CategoryPage({ category, articles, navCategories }: Props) {
+export default function CategoryPage({ category, articles, tags = [], filters = {}, navCategories }: Props) {
+    const selectedSort = typeof filters.sort === 'string' && filters.sort !== '' ? filters.sort : 'latest';
+    const selectedTag = typeof filters.tag === 'string' ? filters.tag : '';
+
+    const updateFilters = (next: { sort?: string; tag?: string }) => {
+        const payload = {
+            ...(selectedSort ? { sort: selectedSort } : {}),
+            ...(selectedTag ? { tag: selectedTag } : {}),
+            ...next,
+        };
+
+        Object.keys(payload).forEach((key) => {
+            const typedKey = key as keyof typeof payload;
+            if (payload[typedKey] === undefined || payload[typedKey] === '') {
+                delete payload[typedKey];
+            }
+        });
+
+        router.get(`/category/${category.slug}`, payload, { preserveState: true, preserveScroll: true, replace: true });
+    };
+
     return (
         <PublicLayout navCategories={navCategories}>
-            <Head>
-                <title>{category.name} — NewsPortal</title>
-                {category.description && <meta name="description" content={category.description} />}
+            <Head title={`${category.name} — NewsPortal`}>
+                <meta name="description" content={category.description ?? `Latest ${category.name} news and updates.`} />
             </Head>
 
             {/* Category Hero */}
@@ -190,6 +211,36 @@ export default function CategoryPage({ category, articles, navCategories }: Prop
 
             {/* Articles Grid */}
             <div className="mx-auto max-w-7xl px-4 py-8">
+                <div className="mb-5 grid gap-3 rounded-xl border border-gray-200 bg-white p-4 md:grid-cols-3 dark:border-gray-800 dark:bg-gray-900">
+                    <div>
+                        <label htmlFor="sort" className="text-xs font-semibold uppercase tracking-wide text-gray-500">Sort</label>
+                        <select
+                            id="sort"
+                            value={selectedSort}
+                            onChange={(e) => updateFilters({ sort: e.target.value })}
+                            className="mt-1 h-9 w-full rounded-md border border-gray-300 bg-white px-3 text-sm dark:border-gray-700 dark:bg-gray-800"
+                        >
+                            <option value="latest">Latest</option>
+                            <option value="popular">Most viewed</option>
+                            <option value="oldest">Oldest</option>
+                        </select>
+                    </div>
+                    <div className="md:col-span-2">
+                        <label htmlFor="tag" className="text-xs font-semibold uppercase tracking-wide text-gray-500">Tag Filter</label>
+                        <select
+                            id="tag"
+                            value={selectedTag}
+                            onChange={(e) => updateFilters({ tag: e.target.value || undefined })}
+                            className="mt-1 h-9 w-full rounded-md border border-gray-300 bg-white px-3 text-sm dark:border-gray-700 dark:bg-gray-800"
+                        >
+                            <option value="">All tags</option>
+                            {tags.map((tag) => (
+                                <option key={tag.id} value={tag.slug}>{tag.name}</option>
+                            ))}
+                        </select>
+                    </div>
+                </div>
+
                 {articles.data.length > 0 ? (
                     <>
                         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">

@@ -31,6 +31,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'verified', 'role:ad
     Route::delete('roles/{role}', [RoleController::class, 'destroy'])->name('roles.destroy');
 
     // Admin publishing shortcut
+    Route::get('articles', [ArticleController::class, 'adminIndex'])->name('articles.index');
     Route::post('articles/{article}/publish', [ArticleController::class, 'publish'])->name('articles.publish');
 });
 

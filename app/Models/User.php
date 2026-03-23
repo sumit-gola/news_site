@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Fortify\TwoFactorAuthenticatable;
@@ -49,6 +50,14 @@ class User extends Authenticatable
     public function permissions(): BelongsToMany
     {
         return $this->morphToMany(Permission::class, 'model', 'model_has_permissions');
+    }
+
+    /**
+     * Articles authored by this user.
+     */
+    public function articles(): HasMany
+    {
+        return $this->hasMany(Article::class, 'user_id');
     }
 
     // ─── RBAC Helpers ─────────────────────────────────────────────────────────

@@ -10,7 +10,9 @@ interface CategoryGroup extends Category {
 
 interface Props {
     featured: Article[];
+    latest: Article[];
     trending: Article[];
+    editorPicks: Article[];
     categoryGroups: CategoryGroup[];
     navCategories: Category[];
 }
@@ -373,7 +375,18 @@ function MostRead({ articles }: { articles: Article[] }) {
 
 // ── Page ──────────────────────────────────────────────────────────────────────
 
-export default function Home({ featured, trending, categoryGroups, navCategories }: Props) {
+export default function Home({ featured, latest, trending, editorPicks, categoryGroups, navCategories }: Props) {
+    const [email, setEmail] = useState('');
+    const [subscribed, setSubscribed] = useState(false);
+
+    const subscribe = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!email.trim()) return;
+        setSubscribed(true);
+        setEmail('');
+        setTimeout(() => setSubscribed(false), 3500);
+    };
+
     return (
         <PublicLayout navCategories={navCategories}>
             <Head title="Home — NewsPortal" />
@@ -397,6 +410,28 @@ export default function Home({ featured, trending, categoryGroups, navCategories
                 {trending.length > 0 && (
                     <div className="mt-6">
                         <TrendingBar articles={trending} />
+                    </div>
+                )}
+
+                {(latest.length > 0 || editorPicks.length > 0) && (
+                    <div className="mt-10 grid gap-8 lg:grid-cols-3">
+                        <section className="lg:col-span-2">
+                            <SectionHeader title="Latest Stories" href="/news" />
+                            <div className="grid gap-4 md:grid-cols-2">
+                                {latest.slice(0, 6).map((article) => (
+                                    <MiniCard key={article.id} article={article} color={article.categories?.[0]?.color} />
+                                ))}
+                            </div>
+                        </section>
+
+                        <aside>
+                            <SectionHeader title="Editor Picks" />
+                            <div className="space-y-2 rounded-2xl border border-gray-100 bg-white p-3 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+                                {editorPicks.map((article) => (
+                                    <MiniCard key={article.id} article={article} color={article.categories?.[0]?.color} />
+                                ))}
+                            </div>
+                        </aside>
                     </div>
                 )}
 
@@ -455,6 +490,32 @@ export default function Home({ featured, trending, categoryGroups, navCategories
                         <p className="mt-2 text-sm">Check back soon for the latest news.</p>
                     </div>
                 )}
+
+                <section className="mt-12 overflow-hidden rounded-2xl border border-red-100 bg-gradient-to-r from-red-50 via-orange-50 to-amber-50 p-6 dark:border-red-900/30 dark:from-red-950/30 dark:via-orange-950/20 dark:to-amber-950/20">
+                    <div className="grid gap-6 md:grid-cols-2 md:items-center">
+                        <div>
+                            <p className="text-xs font-black uppercase tracking-widest text-red-600 dark:text-red-400">Newsletter</p>
+                            <h3 className="mt-2 text-2xl font-black leading-tight">Get The Top Headlines In Your Inbox</h3>
+                            <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">Morning briefing, breaking alerts, and handpicked editor highlights.</p>
+                        </div>
+                        <form onSubmit={subscribe} className="flex flex-col gap-2 sm:flex-row">
+                            <input
+                                type="email"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                required
+                                placeholder="you@example.com"
+                                className="h-11 flex-1 rounded-xl border border-red-200 bg-white px-4 text-sm outline-none ring-red-500/20 focus:ring-4 dark:border-red-900/40 dark:bg-gray-900"
+                            />
+                            <button className="h-11 rounded-xl bg-red-600 px-5 text-sm font-bold text-white transition hover:bg-red-700" type="submit">
+                                Subscribe
+                            </button>
+                        </form>
+                    </div>
+                    {subscribed && (
+                        <p className="mt-3 text-sm font-medium text-green-700 dark:text-green-400">Subscribed successfully. Welcome to the briefing.</p>
+                    )}
+                </section>
             </div>
         </PublicLayout>
     );

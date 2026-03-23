@@ -95,7 +95,7 @@ function AdminNav() {
     const items = [
         { title: 'User Management',    href: '/admin/users',      icon: Users      },
         { title: 'Roles & Permissions', href: '/admin/roles',     icon: Shield     },
-        { title: 'Articles',           href: '/articles',        icon: Newspaper  },
+        { title: 'Articles',           href: '/admin/articles',  icon: Newspaper  },
         { title: 'New Article',        href: '/articles/create', icon: FileText   },
         { title: 'Categories',         href: '/categories',      icon: BookOpen   },
     ];

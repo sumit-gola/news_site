@@ -82,6 +82,61 @@ class ArticleController extends Controller
     }
 
     /**
+     * Display admin article management table (all articles + filters).
+     */
+    public function adminIndex(Request $request): Response
+    {
+        $this->authorize('viewAny', Article::class);
+
+        /** @var User $user */
+        $user = $request->user();
+
+        abort_unless($user->isAdmin(), 403);
+
+        $query = Article::query()
+            ->when($request->search, function ($builder) use ($request) {
+                $search = trim((string) $request->search);
+
+                $builder->where(function ($searchQuery) use ($search) {
+                    $searchQuery
+                        ->where('title', 'like', "%{$search}%")
+                        ->orWhere('excerpt', 'like', "%{$search}%");
+                });
+            })
+            ->when($request->author_id, fn ($builder) => $builder->where('user_id', $request->author_id))
+            ->when($request->category_id, fn ($builder) => $builder->whereHas('categories', fn ($categoryQuery) => $categoryQuery->where('categories.id', $request->category_id)))
+            ->when($request->tag_id, fn ($builder) => $builder->whereHas('tags', fn ($tagQuery) => $tagQuery->where('tags.id', $request->tag_id)))
+            ->when($request->from_date, fn ($builder) => $builder->whereDate('updated_at', '>=', $request->from_date))
+            ->when($request->to_date, fn ($builder) => $builder->whereDate('updated_at', '<=', $request->to_date));
+
+        $summary = [
+            'total'     => (clone $query)->count(),
+            'draft'     => (clone $query)->where('status', 'draft')->count(),
+            'pending'   => (clone $query)->where('status', 'pending')->count(),
+            'published' => (clone $query)->where('status', 'published')->count(),
+            'rejected'  => (clone $query)->where('status', 'rejected')->count(),
+        ];
+
+        $articles = $query
+            ->with(['author', 'meta', 'categories', 'tags'])
+            ->when($request->status, fn ($builder) => $builder->where('status', $request->status))
+            ->latest('updated_at')
+            ->paginate(20)
+            ->withQueryString()
+            ->through(fn (Article $article) => $this->serializeArticleForManagement($article, $user));
+
+        return Inertia::render('admin/articles/index', [
+            'articles'   => $articles,
+            'filters'    => $request->only(['search', 'status', 'author_id', 'category_id', 'tag_id', 'from_date', 'to_date']),
+            'statuses'   => ['draft', 'pending', 'published', 'rejected'],
+            'summary'    => $summary,
+            'authors'    => User::orderBy('name')->get(['id', 'name']),
+            'categories' => Category::active()->orderBy('order')->get(['id', 'name']),
+            'tags'       => Tag::orderBy('name')->get(['id', 'name', 'slug']),
+        ]);
+    }
+
+    /**
      * Show the form for creating a new article.
      */
     public function create(): Response

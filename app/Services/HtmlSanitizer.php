@@ -41,6 +41,10 @@ class HtmlSanitizer
             }
             $config->set('Cache.SerializerPath', $cacheDir);
 
+            // Register custom HTML5 elements not bundled in default definitions.
+            $config->set('HTML.DefinitionID', 'newsportal-html5');
+            $config->set('HTML.DefinitionRev', 1);
+
             // Allow a rich subset suitable for a news article editor
             $config->set('HTML.Allowed',
                 'p,br,strong,b,em,i,u,s,del,ins,' .
@@ -57,6 +61,11 @@ class HtmlSanitizer
             // Force rel="noopener noreferrer" on external links
             $config->set('HTML.TargetBlank', true);
             $config->set('HTML.TargetNoreferrer', true);
+
+            if ($def = $config->maybeGetRawHTMLDefinition()) {
+                $def->addElement('figure', 'Block', 'Flow', 'Common');
+                $def->addElement('figcaption', 'Block', 'Flow', 'Common');
+            }
 
             static::$instance = new HTMLPurifier($config);
         }
