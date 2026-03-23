@@ -16,15 +16,19 @@ type Props = {
     navCategories: Category[];
 };
 
-export default function AuthorPage({ author, articles, filters, navCategories }: Props) {
+export default function AuthorPage({ author, articles, filters = {}, navCategories }: Props) {
+    const selectedSort = typeof filters?.sort === 'string' ? filters.sort : 'latest';
+
     const updateFilters = (next: { sort?: string }) => {
-        router.get(`/author/${author.slug}`, { ...filters, ...next }, { preserveState: true, preserveScroll: true, replace: true });
+        const params: Record<string, string> = {};
+        const merged = { ...filters, ...next };
+        if (merged.sort) params.sort = merged.sort;
+        router.get(`/author/${author.slug}`, params, { preserveState: true, preserveScroll: true, replace: true });
     };
 
     return (
         <PublicLayout navCategories={navCategories}>
-            <Head>
-                <title>{author.name} - Author</title>
+            <Head title={`${author.name} — Author`}>
                 <meta name="description" content={`Read articles written by ${author.name}.`} />
             </Head>
 
@@ -44,7 +48,7 @@ export default function AuthorPage({ author, articles, filters, navCategories }:
                         <label htmlFor="sort" className="mr-2 text-xs font-semibold uppercase tracking-wide text-gray-500">Sort</label>
                         <select
                             id="sort"
-                            value={filters.sort ?? 'latest'}
+                            value={selectedSort}
                             onChange={(e) => updateFilters({ sort: e.target.value })}
                             className="h-9 rounded-md border border-gray-300 bg-white px-3 text-sm dark:border-gray-700 dark:bg-gray-800"
                         >
