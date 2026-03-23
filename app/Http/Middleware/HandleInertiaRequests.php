@@ -2,7 +2,9 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\Advertisement;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Schema;
 use Inertia\Middleware;
 
 class HandleInertiaRequests extends Middleware
@@ -51,7 +53,19 @@ class HandleInertiaRequests extends Middleware
                 'success' => fn () => $request->session()->get('success'),
                 'error'   => fn () => $request->session()->get('error'),
             ],
+            'ads' => [
+                'activeCount' => fn () => $this->activeAdCount(),
+            ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
         ];
+    }
+
+    private function activeAdCount(): int
+    {
+        if (!Schema::hasTable('advertisements')) {
+            return 0;
+        }
+
+        return Advertisement::query()->active()->count();
     }
 }

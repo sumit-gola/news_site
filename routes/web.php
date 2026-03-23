@@ -2,6 +2,11 @@
 
 use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\Admin\AdAnalyticsController;
+use App\Http\Controllers\Admin\AdSlotController;
+use App\Http\Controllers\Admin\AdvertisementController;
+use App\Http\Controllers\Admin\AdvertiserController;
+use App\Http\Controllers\Api\AdSlotController as PublicAdSlotController;
 use App\Http\Controllers\ArticleController;
 use App\Http\Controllers\CategoryController;
 use App\Models\Article;
@@ -33,6 +38,13 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'verified', 'role:ad
     // Admin publishing shortcut
     Route::get('articles', [ArticleController::class, 'adminIndex'])->name('articles.index');
     Route::post('articles/{article}/publish', [ArticleController::class, 'publish'])->name('articles.publish');
+
+    // Advertisement Management
+    Route::get('advertisements/analytics', [AdAnalyticsController::class, 'index'])->name('advertisements.analytics');
+    Route::patch('advertisements/{advertisement}/toggle-status', [AdvertisementController::class, 'toggleStatus'])->name('advertisements.toggle-status');
+    Route::resource('advertisements', AdvertisementController::class);
+    Route::resource('advertisers', AdvertiserController::class)->except(['show']);
+    Route::resource('ad-slots', AdSlotController::class)->except(['show']);
 });
 
 // ── Authenticated Routes ──────────────────────────────────────────────────────
@@ -91,3 +103,7 @@ Route::middleware(['auth', 'verified', 'role:admin,manager,reporter'])->group(fu
 });
 
 require __DIR__.'/settings.php';
+
+Route::get('/api/ad-slots', [PublicAdSlotController::class, 'index'])->name('api.ad-slots.index');
+Route::post('/api/ad-slots/{advertisement}/impression', [PublicAdSlotController::class, 'trackImpression'])->name('api.ad-slots.impression');
+Route::post('/api/ad-slots/{advertisement}/click', [PublicAdSlotController::class, 'trackClick'])->name('api.ad-slots.click');

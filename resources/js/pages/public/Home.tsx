@@ -1,6 +1,7 @@
 import { Head, Link } from '@inertiajs/react';
 import { Clock, Eye, ChevronLeft, ChevronRight, Flame, TrendingUp, Radio } from 'lucide-react';
 import { useState, useEffect, useCallback, useRef } from 'react';
+import AdSlot from '@/components/ads/AdSlot';
 import PublicLayout from '@/layouts/public-layout';
 import type { Article, Category } from '@/types';
 
@@ -395,6 +396,7 @@ export default function Home({ featured, latest, trending, editorPicks, category
             {trending.length > 0 && <BreakingTicker articles={trending.slice(0, 6)} />}
 
             <div className="mx-auto max-w-7xl px-4 py-6">
+                <AdSlot position="header" page="home" className="mb-6" />
 
                 {/* Hero + Latest sidebar */}
                 <div className="grid gap-6 lg:grid-cols-3">
@@ -435,6 +437,8 @@ export default function Home({ featured, latest, trending, editorPicks, category
                     </div>
                 )}
 
+                <AdSlot position="inline" page="home" className="mt-10" />
+
                 {/* Category sections + Most Read sidebar */}
                 {categoryGroups.length > 0 && (
                     <div className="mt-10 grid gap-10 lg:grid-cols-3">
@@ -449,13 +453,7 @@ export default function Home({ featured, latest, trending, editorPicks, category
                         <div className="space-y-8">
                             <MostRead articles={trending} />
 
-                            {/* Ad / promo placeholder */}
-                            <div className="flex h-60 items-center justify-center rounded-2xl border-2 border-dashed border-gray-200 bg-gray-50 text-center dark:border-gray-700 dark:bg-gray-900/50">
-                                <div className="text-gray-400">
-                                    <p className="text-xs font-medium uppercase tracking-widest">Advertisement</p>
-                                    <p className="mt-1 text-sm">300 × 250</p>
-                                </div>
-                            </div>
+                            <AdSlot position="sidebar" page="home" />
 
                             {/* Category browser */}
                             {navCategories.length > 0 && (
@@ -516,6 +514,8 @@ export default function Home({ featured, latest, trending, editorPicks, category
                         <p className="mt-3 text-sm font-medium text-green-700 dark:text-green-400">Subscribed successfully. Welcome to the briefing.</p>
                     )}
                 </section>
+
+                <AdSlot position="footer" page="home" className="mt-10" />
             </div>
         </PublicLayout>
     );

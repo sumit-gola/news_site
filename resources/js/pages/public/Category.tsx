@@ -1,5 +1,6 @@
 import { Head, Link, router } from '@inertiajs/react';
 import { Clock, Eye, ChevronLeft, ChevronRight } from 'lucide-react';
+import AdSlot from '@/components/ads/AdSlot';
 import PublicLayout from '@/layouts/public-layout';
 import type { Article, Category, Paginated, Tag } from '@/types';
 
@@ -206,6 +207,8 @@ export default function CategoryPage({ category, articles, tags = [], filters = 
                             ))}
                         </div>
                     )}
+
+                    <AdSlot position="header" page="category" categoryId={category.id} className="mt-6" />
                 </div>
             </div>
 
@@ -241,6 +244,8 @@ export default function CategoryPage({ category, articles, tags = [], filters = 
                     </div>
                 </div>
 
+                <AdSlot position="inline" page="category" categoryId={category.id} className="mb-6" />
+
                 {articles.data.length > 0 ? (
                     <>
                         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -264,6 +269,8 @@ export default function CategoryPage({ category, articles, tags = [], filters = 
                         </Link>
                     </div>
                 )}
+
+                <AdSlot position="footer" page="category" categoryId={category.id} className="mt-8" />
             </div>
         </PublicLayout>
     );

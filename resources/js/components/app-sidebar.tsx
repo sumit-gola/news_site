@@ -1,10 +1,14 @@
 import { Link, usePage } from '@inertiajs/react';
 import {
+    BarChart3,
     BookOpen,
     FileText,
     FolderGit2,
+    ImagePlus,
     LayoutGrid,
+    Megaphone,
     Newspaper,
+    PanelsTopLeft,
     Settings,
     Shield,
     Users,
@@ -19,8 +23,12 @@ import {
     SidebarFooter,
     SidebarHeader,
     SidebarMenu,
+    SidebarMenuBadge,
     SidebarMenuButton,
     SidebarMenuItem,
+    SidebarMenuSub,
+    SidebarMenuSubButton,
+    SidebarMenuSubItem,
     SidebarGroup,
     SidebarGroupLabel,
 } from '@/components/ui/sidebar';
@@ -41,9 +49,10 @@ const footerNavItems: NavItem[] = [
 ];
 
 export function AppSidebar() {
-    const { auth } = usePage<{ auth: Auth }>().props;
+    const { auth, ads } = usePage<{ auth: Auth; ads?: { activeCount?: number } }>().props;
     const user = auth?.user;
     const roles = user?.roles?.map((r) => r.name) ?? [];
+    const activeAdsCount = ads?.activeCount ?? 0;
 
     const isAdmin    = roles.includes('admin');
     const isManager  = roles.includes('manager');
@@ -74,7 +83,7 @@ export function AppSidebar() {
             <SidebarContent>
                 <NavMain items={mainNavItems} />
 
-                {isAdmin && <AdminNav />}
+                {isAdmin && <AdminNav activeAdsCount={activeAdsCount} />}
 
                 {(isAdmin || isManager) && <ManagerNav />}
 
@@ -89,15 +98,15 @@ export function AppSidebar() {
     );
 }
 
-function AdminNav() {
+function AdminNav({ activeAdsCount }: { activeAdsCount: number }) {
     const { url } = usePage();
 
     const items = [
-        { title: 'User Management',    href: '/admin/users',      icon: Users      },
-        { title: 'Roles & Permissions', href: '/admin/roles',     icon: Shield     },
-        { title: 'Articles',           href: '/admin/articles',  icon: Newspaper  },
-        { title: 'New Article',        href: '/articles/create', icon: FileText   },
-        { title: 'Categories',         href: '/categories',      icon: BookOpen   },
+        { title: 'User Management', href: '/admin/users', icon: Users },
+        { title: 'Roles & Permissions', href: '/admin/roles', icon: Shield },
+        { title: 'Articles', href: '/admin/articles', icon: Newspaper },
+        { title: 'Categories', href: '/categories', icon: BookOpen },
+        { title: 'Settings', href: '/settings/profile', icon: Settings },
     ];
 
     return (
@@ -121,6 +130,60 @@ function AdminNav() {
                         </SidebarMenuButton>
                     </SidebarMenuItem>
                 ))}
+
+                <SidebarMenuItem>
+                    <SidebarMenuButton
+                        isActive={url.startsWith('/admin/advertisements') || url.startsWith('/admin/advertisers') || url.startsWith('/admin/ad-slots')}
+                        tooltip={{ children: 'Advertisements' }}
+                    >
+                        <Megaphone />
+                        <span>Advertisements</span>
+                    </SidebarMenuButton>
+                    <SidebarMenuBadge>{activeAdsCount}</SidebarMenuBadge>
+
+                    <SidebarMenuSub>
+                        <SidebarMenuSubItem>
+                            <SidebarMenuSubButton asChild isActive={url.startsWith('/admin/advertisements')}>
+                                <Link href="/admin/advertisements" prefetch>
+                                    <Newspaper />
+                                    <span>All Ads</span>
+                                </Link>
+                            </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                        <SidebarMenuSubItem>
+                            <SidebarMenuSubButton asChild isActive={url === '/admin/advertisements/create'}>
+                                <Link href="/admin/advertisements/create" prefetch>
+                                    <ImagePlus />
+                                    <span>Add New Ad</span>
+                                </Link>
+                            </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                        <SidebarMenuSubItem>
+                            <SidebarMenuSubButton asChild isActive={url.startsWith('/admin/advertisers')}>
+                                <Link href="/admin/advertisers" prefetch>
+                                    <Users />
+                                    <span>Clients</span>
+                                </Link>
+                            </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                        <SidebarMenuSubItem>
+                            <SidebarMenuSubButton asChild isActive={url.startsWith('/admin/ad-slots')}>
+                                <Link href="/admin/ad-slots" prefetch>
+                                    <PanelsTopLeft />
+                                    <span>Ad Slots</span>
+                                </Link>
+                            </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                        <SidebarMenuSubItem>
+                            <SidebarMenuSubButton asChild isActive={url.startsWith('/admin/advertisements/analytics')}>
+                                <Link href="/admin/advertisements/analytics" prefetch>
+                                    <BarChart3 />
+                                    <span>Analytics</span>
+                                </Link>
+                            </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                    </SidebarMenuSub>
+                </SidebarMenuItem>
             </SidebarMenu>
         </SidebarGroup>
     );

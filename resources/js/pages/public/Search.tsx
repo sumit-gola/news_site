@@ -1,6 +1,7 @@
 import { Head, Link, router } from '@inertiajs/react';
 import { Search, Clock, Eye, X } from 'lucide-react';
 import { useState } from 'react';
+import AdSlot from '@/components/ads/AdSlot';
 import PublicLayout from '@/layouts/public-layout';
 import type { Article, Category, Paginated } from '@/types';
 
@@ -216,6 +217,8 @@ export default function SearchPage({ results, query: initialQuery, filters = {},
                     </div>
                 )}
 
+                {initialQuery && <AdSlot position="header" page="search" className="mt-6" />}
+
                 {/* Results list */}
                 <div className="mt-6 space-y-4">
                     {results?.data.map((article) => (
@@ -224,6 +227,8 @@ export default function SearchPage({ results, query: initialQuery, filters = {},
                 </div>
 
                 {results && <Pagination data={results} query={initialQuery} />}
+
+                {initialQuery && <AdSlot position="footer" page="search" className="mt-8" />}
 
                 {/* Empty / initial state */}
                 {!initialQuery && (

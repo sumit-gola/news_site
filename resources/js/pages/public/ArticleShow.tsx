@@ -1,6 +1,7 @@
 import { Head, Link } from '@inertiajs/react';
 import { Clock, Eye, Calendar, User, Tag, Share2, Facebook, Twitter, Link2, ArrowLeft } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import AdSlot from '@/components/ads/AdSlot';
 import PublicLayout from '@/layouts/public-layout';
 import type { Article, Category } from '@/types';
 
@@ -107,6 +108,7 @@ export default function ArticleShow({ article, related, trending, navCategories 
     const pageUrl   = typeof window !== 'undefined' ? window.location.href : '';
     const readTime  = article.meta?.read_time ?? Math.max(1, Math.ceil(article.content.split(' ').length / 200));
     const wordCount = article.meta?.word_count ?? article.content.split(' ').length;
+    const primaryCategoryId = article.categories?.[0]?.id;
     const bookmarkKey = `bookmark:${article.id}`;
     const [scrollProgress, setScrollProgress] = useState(0);
     const [bookmarked, setBookmarked] = useState<boolean>(() => {
@@ -251,6 +253,8 @@ export default function ArticleShow({ article, related, trending, navCategories 
                             dangerouslySetInnerHTML={{ __html: article.content }}
                         />
 
+                        <AdSlot position="inline" page="article" categoryId={primaryCategoryId} className="mt-8" />
+
                         {/* Tags */}
                         {article.tags && article.tags.length > 0 && (
                             <div className="mt-8 flex flex-wrap items-center gap-2 border-t border-gray-200 pt-6 dark:border-gray-700">
@@ -300,6 +304,8 @@ export default function ArticleShow({ article, related, trending, navCategories 
 
                     {/* ── Sidebar ──────────────────────────────────────────── */}
                     <aside className="space-y-8 lg:sticky lg:top-28 lg:self-start">
+                        <AdSlot position="sidebar" page="article" categoryId={primaryCategoryId} sticky />
+
                         {/* Related articles */}
                         {related.length > 0 && (
                             <div>
@@ -353,6 +359,8 @@ export default function ArticleShow({ article, related, trending, navCategories 
                                 </div>
                             </div>
                         )}
+
+                        <AdSlot position="footer" page="article" categoryId={primaryCategoryId} />
                     </aside>
                 </div>
             </div>
