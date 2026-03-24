@@ -1,6 +1,6 @@
 import { Head, Link, router } from '@inertiajs/react';
 import PublicLayout from '@/layouts/public-layout';
-import type { Article, Category, Paginated } from '@/types';
+import type { Article, Paginated } from '@/types';
 
 type AuthorData = {
     id: number;
@@ -13,10 +13,9 @@ type Props = {
     author: AuthorData;
     articles: Paginated<Article>;
     filters: { sort?: string };
-    navCategories: Category[];
 };
 
-export default function AuthorPage({ author, articles, filters = {}, navCategories }: Props) {
+export default function AuthorPage({ author, articles, filters = {} }: Props) {
     const selectedSort = typeof filters?.sort === 'string' ? filters.sort : 'latest';
 
     const updateFilters = (next: { sort?: string }) => {
@@ -27,7 +26,7 @@ export default function AuthorPage({ author, articles, filters = {}, navCategori
     };
 
     return (
-        <PublicLayout navCategories={navCategories}>
+        <PublicLayout>
             <Head title={`${author.name} — Author`}>
                 <meta name="description" content={`Read articles written by ${author.name}.`} />
             </Head>

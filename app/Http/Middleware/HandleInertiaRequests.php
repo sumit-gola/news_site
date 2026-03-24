@@ -3,7 +3,9 @@
 namespace App\Http\Middleware;
 
 use App\Models\Advertisement;
+use App\Models\Category;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Schema;
 use Inertia\Middleware;
 
@@ -56,6 +58,7 @@ class HandleInertiaRequests extends Middleware
             'ads' => [
                 'activeCount' => fn () => $this->activeAdCount(),
             ],
+            'navCategories' => fn () => $this->navCategories(),
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
         ];
     }
@@ -67,5 +70,26 @@ class HandleInertiaRequests extends Middleware
         }
 
         return Advertisement::query()->active()->count();
+    }
+
+    private function navCategories(): mixed
+    {
+        if (!Schema::hasTable('categories')) {
+            return [];
+        }
+
+        return Cache::remember('nav_categories_tree', 900, function () {
+            return Category::query()
+                ->where('is_active', true)
+                ->whereNull('parent_id')
+                ->orderBy('order')
+                ->with([
+                    'children' => fn ($q) => $q->where('is_active', true)->orderBy('order'),
+                    'children.children' => fn ($q) => $q->where('is_active', true)->orderBy('order'),
+                    'children.children.children' => fn ($q) => $q->where('is_active', true)->orderBy('order'),
+                    'children.children.children.children' => fn ($q) => $q->where('is_active', true)->orderBy('order'),
+                ])
+                ->get();
+        });
     }
 }

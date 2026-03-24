@@ -1,15 +1,14 @@
 import { Head, Link, router } from '@inertiajs/react';
 import PublicLayout from '@/layouts/public-layout';
-import type { Article, Category, Paginated, Tag } from '@/types';
+import type { Article, Paginated, Tag } from '@/types';
 
 type Props = {
     tag: Tag;
     articles: Paginated<Article>;
     filters: { sort?: string };
-    navCategories: Category[];
 };
 
-export default function TagPage({ tag, articles, filters = {}, navCategories }: Props) {
+export default function TagPage({ tag, articles, filters = {} }: Props) {
     const selectedSort = typeof filters?.sort === 'string' ? filters.sort : 'latest';
 
     const updateFilters = (next: { sort?: string }) => {
@@ -22,7 +21,7 @@ export default function TagPage({ tag, articles, filters = {}, navCategories }: 
     };
 
     return (
-        <PublicLayout navCategories={navCategories}>
+        <PublicLayout>
             <Head title={`${tag.name} — Tag`}>
                 <meta name="description" content={`Read latest stories tagged with ${tag.name}.`} />
             </Head>

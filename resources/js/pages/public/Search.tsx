@@ -1,4 +1,4 @@
-import { Head, Link, router } from '@inertiajs/react';
+import { Head, Link, router, usePage } from '@inertiajs/react';
 import { Search, Clock, Eye, X } from 'lucide-react';
 import { useState } from 'react';
 import AdSlot from '@/components/ads/AdSlot';
@@ -10,7 +10,6 @@ interface Props {
     query: string;
     filters: { category?: string; sort?: string };
     categories: Category[];
-    navCategories: Category[];
 }
 
 function timeAgo(date: string) {
@@ -115,7 +114,8 @@ function Pagination({ data, query }: { data: Paginated<Article>; query: string }
     );
 }
 
-export default function SearchPage({ results, query: initialQuery, filters = {}, categories, navCategories }: Props) {
+export default function SearchPage({ results, query: initialQuery, filters = {}, categories }: Props) {
+    const { navCategories } = usePage<{ navCategories: Category[] }>().props;
     const selectedCategory = typeof filters?.category === 'string' ? filters.category : '';
     const selectedSort     = typeof filters?.sort     === 'string' ? filters.sort     : 'latest';
 
@@ -143,7 +143,7 @@ export default function SearchPage({ results, query: initialQuery, filters = {},
     };
 
     return (
-        <PublicLayout navCategories={navCategories}>
+        <PublicLayout>
             <Head title={initialQuery ? `"${initialQuery}" — Search` : 'Search — NewsPortal'} />
 
             <div className="mx-auto max-w-4xl px-4 py-10">

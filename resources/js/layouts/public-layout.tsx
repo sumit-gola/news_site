@@ -6,16 +6,16 @@ import PublicHeader from '@/components/public/PublicHeader';
 
 interface Props {
     children: ReactNode;
-    navCategories: Category[];
 }
 
-export default function PublicLayout({ children, navCategories }: Props) {
-    const { auth } = usePage<{ auth: Auth }>().props;
+export default function PublicLayout({ children }: Props) {
+    const { auth, navCategories } = usePage<{ auth: Auth; navCategories: Category[] }>().props;
+    const categories: Category[] = navCategories ?? [];
 
     return (
         <div className="min-h-screen bg-white text-gray-900 dark:bg-gray-950 dark:text-gray-100">
             {/* ── Header ───────────────────────────────────────────────────── */}
-            <PublicHeader navCategories={navCategories} />
+            <PublicHeader navCategories={categories} />
 
             {/* ── Page Content ─────────────────────────────────────────────── */}
             <main>{children}</main>
@@ -41,7 +41,7 @@ export default function PublicLayout({ children, navCategories }: Props) {
                         <div>
                             <h4 className="mb-3 text-sm font-semibold uppercase tracking-wider text-gray-300">Categories</h4>
                             <ul className="space-y-1.5 text-sm">
-                                {navCategories.slice(0, 5).map((cat) => (
+                                {categories.slice(0, 5).map((cat) => (
                                     <li key={cat.id}>
                                         <Link href={`/category/${cat.slug}`} className="transition hover:text-white">
                                             {cat.name}

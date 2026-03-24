@@ -1,7 +1,6 @@
 import { Link, router, usePage } from '@inertiajs/react';
 import {
     ChevronDown,
-    ChevronRight,
     Clock,
     LayoutDashboard,
     LogIn,
@@ -45,6 +44,7 @@ import {
 } from '@/components/ui/sheet';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { useAppearance } from '@/hooks/use-appearance';
+import { MegaMenu, SimpleCategoryList } from '@/components/public/MegaMenu';
 import type { Auth, Category } from '@/types';
 
 interface Props {
@@ -345,8 +345,6 @@ export default function PublicHeader({ navCategories }: Props) {
                                         );
                                     }
 
-                                    const isMega = hasGrandchildren(cat);
-
                                     return (
                                         <NavigationMenuItem key={cat.id}>
                                             <NavigationMenuTrigger className="text-sm">
@@ -354,81 +352,10 @@ export default function PublicHeader({ navCategories }: Props) {
                                                 {cat.name}
                                             </NavigationMenuTrigger>
                                             <NavigationMenuContent>
-                                                {isMega ? (
-                                                    /* ── Mega-menu: multi-column grid for deep hierarchies ── */
-                                                    <div className="w-[600px] p-3">
-                                                        {/* "All Category" link */}
-                                                        <NavigationMenuLink asChild>
-                                                            <Link
-                                                                href={`/category/${cat.slug}`}
-                                                                className="mb-2 flex items-center gap-2 rounded-md px-3 py-2 text-sm font-semibold transition hover:bg-accent"
-                                                            >
-                                                                <span className="inline-block size-2.5 rounded-full" style={{ backgroundColor: cat.color }} />
-                                                                All {cat.name}
-                                                                <ChevronRight className="ml-auto size-3.5 text-muted-foreground" />
-                                                            </Link>
-                                                        </NavigationMenuLink>
-                                                        <Separator className="mb-2" />
-                                                        <div className="grid max-h-[400px] grid-cols-2 gap-x-4 gap-y-1 overflow-y-auto">
-                                                            {children.map((child) => (
-                                                                <div key={child.id} className="mb-2">
-                                                                    <NavigationMenuLink asChild>
-                                                                        <Link
-                                                                            href={`/category/${child.slug}`}
-                                                                            className="mb-0.5 flex items-center gap-2 rounded-md px-2 py-1.5 text-sm font-semibold transition hover:bg-accent"
-                                                                        >
-                                                                            <span className="inline-block size-2 rounded-full" style={{ backgroundColor: child.color }} />
-                                                                            {child.name}
-                                                                        </Link>
-                                                                    </NavigationMenuLink>
-                                                                    {child.children && child.children.length > 0 && (
-                                                                        <div className="ml-4 flex flex-col gap-0.5">
-                                                                            {child.children.map((grandchild) => (
-                                                                                <NavigationMenuLink key={grandchild.id} asChild>
-                                                                                    <Link
-                                                                                        href={`/category/${grandchild.slug}`}
-                                                                                        className="flex items-center gap-2 rounded-md px-2 py-1 text-xs text-muted-foreground transition hover:bg-accent hover:text-foreground"
-                                                                                    >
-                                                                                        <span className="inline-block size-1 rounded-full" style={{ backgroundColor: grandchild.color }} />
-                                                                                        {grandchild.name}
-                                                                                    </Link>
-                                                                                </NavigationMenuLink>
-                                                                            ))}
-                                                                        </div>
-                                                                    )}
-                                                                </div>
-                                                            ))}
-                                                        </div>
-                                                    </div>
+                                                {hasGrandchildren(cat) ? (
+                                                    <MegaMenu category={cat} />
                                                 ) : (
-                                                    /* ── Simple dropdown for flat children ── */
-                                                    <div className="grid w-[340px] gap-1 p-2">
-                                                        <NavigationMenuLink asChild>
-                                                            <Link
-                                                                href={`/category/${cat.slug}`}
-                                                                className="flex items-center gap-2 rounded-md px-3 py-2.5 text-sm font-semibold transition hover:bg-accent"
-                                                            >
-                                                                <span className="inline-block size-2.5 rounded-full" style={{ backgroundColor: cat.color }} />
-                                                                All {cat.name}
-                                                                <ChevronRight className="ml-auto size-3.5 text-muted-foreground" />
-                                                            </Link>
-                                                        </NavigationMenuLink>
-                                                        <Separator />
-                                                        {children.map((child) => (
-                                                            <NavigationMenuLink key={child.id} asChild>
-                                                                <Link
-                                                                    href={`/category/${child.slug}`}
-                                                                    className="flex items-center gap-2 rounded-md px-3 py-2 text-sm transition hover:bg-accent"
-                                                                >
-                                                                    <span
-                                                                        className="inline-block size-1.5 rounded-full"
-                                                                        style={{ backgroundColor: child.color }}
-                                                                    />
-                                                                    {child.name}
-                                                                </Link>
-                                                            </NavigationMenuLink>
-                                                        ))}
-                                                    </div>
+                                                    <SimpleCategoryList category={cat} />
                                                 )}
                                             </NavigationMenuContent>
                                         </NavigationMenuItem>

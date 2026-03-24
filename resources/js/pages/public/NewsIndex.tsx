@@ -22,7 +22,6 @@ type Props = {
     categories: Category[];
     tags: Tag[];
     authors: AuthorOption[];
-    navCategories: Category[];
 };
 
 function ArticleCard({ article, listMode }: { article: Article; listMode: boolean }) {
@@ -93,7 +92,7 @@ function SkeletonCard({ listMode }: { listMode: boolean }) {
     );
 }
 
-export default function NewsIndex({ articles, filters = {} as Filters, categories, tags, authors, navCategories }: Props) {
+export default function NewsIndex({ articles, filters = {} as Filters, categories, tags, authors }: Props) {
     const selectedQ        = typeof filters?.q         === 'string' ? filters.q         : '';
     const selectedCategory = typeof filters?.category  === 'string' ? filters.category  : '';
     const selectedTag      = typeof filters?.tag       === 'string' ? filters.tag       : '';
@@ -143,7 +142,7 @@ export default function NewsIndex({ articles, filters = {} as Filters, categorie
     const visibleTags = useMemo(() => tags.slice(0, 12), [tags]);
 
     return (
-        <PublicLayout navCategories={navCategories}>
+        <PublicLayout>
             <Head title="Latest News" />
 
             <div className="mx-auto max-w-7xl px-4 py-8">

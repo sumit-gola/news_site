@@ -1,7 +1,5 @@
 import { Head } from '@inertiajs/react';
 import PublicLayout from '@/layouts/public-layout';
-import type { Category } from '@/types';
-
 type StaticPageData = {
     slug: string;
     title: string;
@@ -11,12 +9,11 @@ type StaticPageData = {
 
 type Props = {
     page: StaticPageData;
-    navCategories: Category[];
 };
 
-export default function StaticPage({ page, navCategories }: Props) {
+export default function StaticPage({ page }: Props) {
     return (
-        <PublicLayout navCategories={navCategories}>
+        <PublicLayout>
             <Head title={page.title}>
                 <meta name="description" content={page.description} />
             </Head>

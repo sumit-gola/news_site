@@ -1,4 +1,4 @@
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, usePage } from '@inertiajs/react';
 import { Clock, Eye, Calendar, User, Tag, Share2, Facebook, Twitter, Link2, ArrowLeft } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import AdSlot from '@/components/ads/AdSlot';
@@ -9,7 +9,6 @@ interface Props {
     article: Article;
     related: Article[];
     trending: Article[];
-    navCategories: Category[];
 }
 
 function timeAgo(date: string) {
@@ -104,7 +103,8 @@ function ShareButtons({ title, url }: { title: string; url: string }) {
     );
 }
 
-export default function ArticleShow({ article, related, trending, navCategories }: Props) {
+export default function ArticleShow({ article, related, trending }: Props) {
+    const { navCategories } = usePage<{ navCategories: Category[] }>().props;
     const pageUrl   = typeof window !== 'undefined' ? window.location.href : '';
     const readTime  = article.meta?.read_time ?? Math.max(1, Math.ceil(article.content.split(' ').length / 200));
     const wordCount = article.meta?.word_count ?? article.content.split(' ').length;
@@ -138,7 +138,7 @@ export default function ArticleShow({ article, related, trending, navCategories 
     };
 
     return (
-        <PublicLayout navCategories={navCategories}>
+        <PublicLayout>
             <Head title={article.meta?.meta_title ?? article.title}>
                 {article.meta?.meta_description ? (
                     <meta name="description" content={article.meta.meta_description} />

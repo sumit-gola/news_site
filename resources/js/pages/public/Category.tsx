@@ -9,7 +9,6 @@ interface Props {
     articles: Paginated<Article>;
     tags?: Tag[];
     filters?: { sort?: string | null; tag?: string | null };
-    navCategories: Category[];
 }
 
 function timeAgo(date: string) {
@@ -110,7 +109,7 @@ function Pagination({ data }: { data: Paginated<Article> }) {
     );
 }
 
-export default function CategoryPage({ category, articles, tags = [], filters = {}, navCategories }: Props) {
+export default function CategoryPage({ category, articles, tags = [], filters = {} }: Props) {
     const selectedSort = typeof filters.sort === 'string' && filters.sort !== '' ? filters.sort : 'latest';
     const selectedTag = typeof filters.tag === 'string' ? filters.tag : '';
 
@@ -132,7 +131,7 @@ export default function CategoryPage({ category, articles, tags = [], filters = 
     };
 
     return (
-        <PublicLayout navCategories={navCategories}>
+        <PublicLayout>
             <Head title={`${category.name} — NewsPortal`}>
                 <meta name="description" content={category.description ?? `Latest ${category.name} news and updates.`} />
             </Head>

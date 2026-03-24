@@ -1,4 +1,4 @@
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, usePage } from '@inertiajs/react';
 import { Clock, Eye, ChevronLeft, ChevronRight, Flame, TrendingUp, Radio } from 'lucide-react';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import AdSlot from '@/components/ads/AdSlot';
@@ -15,7 +15,6 @@ interface Props {
     trending: Article[];
     editorPicks: Article[];
     categoryGroups: CategoryGroup[];
-    navCategories: Category[];
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -376,7 +375,8 @@ function MostRead({ articles }: { articles: Article[] }) {
 
 // ── Page ──────────────────────────────────────────────────────────────────────
 
-export default function Home({ featured, latest, trending, editorPicks, categoryGroups, navCategories }: Props) {
+export default function Home({ featured, latest, trending, editorPicks, categoryGroups }: Props) {
+    const { navCategories } = usePage<{ navCategories: Category[] }>().props;
     const [email, setEmail] = useState('');
     const [subscribed, setSubscribed] = useState(false);
 
@@ -389,7 +389,7 @@ export default function Home({ featured, latest, trending, editorPicks, category
     };
 
     return (
-        <PublicLayout navCategories={navCategories}>
+        <PublicLayout>
             <Head title="Home — NewsPortal" />
 
             {/* Breaking news ticker */}
