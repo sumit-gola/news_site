@@ -148,6 +148,7 @@ class ArticleController extends Controller
             'authors'    => User::role('reporter')->get(['id', 'name', 'email']),
             'categories' => Category::active()->with('children')->orderBy('order')->get(),
             'tags'       => Tag::orderBy('name')->get(['id', 'name', 'slug']),
+            'languages'  => ['en' => 'English', 'hi' => 'हिंदी'],
         ]);
     }
 

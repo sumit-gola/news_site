@@ -9,6 +9,7 @@ use App\Http\Controllers\Admin\AdvertiserController;
 use App\Http\Controllers\Api\AdSlotController as PublicAdSlotController;
 use App\Http\Controllers\ArticleController;
 use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\EditorImageController;
 use App\Models\Article;
 use App\Models\Category;
 use Illuminate\Support\Facades\Route;
@@ -61,6 +62,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::delete('categories/{category}', [CategoryController::class, 'destroy'])->name('categories.destroy');
     Route::post('categories/reorder', [CategoryController::class, 'reorder'])->name('categories.reorder');
     Route::get('categories/list', [CategoryController::class, 'list'])->name('categories.list');
+
+    // ── Editor Image Upload ──
+    Route::post('editor/images/upload', [EditorImageController::class, 'upload'])->name('editor.images.upload');
 
     // ── Article Management ──
     Route::get('articles', [ArticleController::class, 'index'])->name('articles.index');
