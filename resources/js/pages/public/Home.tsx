@@ -46,23 +46,25 @@ function CategoryBadge({ category, small }: { category: Category; small?: boolea
 
 function BreakingTicker({ articles }: { articles: Article[] }) {
     if (!articles.length) return null;
-    // duplicate for seamless loop
+    // Duplicate items for a seamless infinite loop (CSS translateX -50%)
     const items = [...articles, ...articles];
     return (
-        <div className="flex items-center gap-0 overflow-hidden border-b border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-950">
-            <div className="flex shrink-0 items-center gap-2 bg-red-600 px-4 py-2 text-xs font-black uppercase tracking-widest text-white">
+        <div className="flex items-stretch overflow-hidden border-b border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-950">
+            {/* Label */}
+            <div className="z-10 flex shrink-0 items-center gap-2 bg-red-600 px-4 py-2.5 text-xs font-black uppercase tracking-widest text-white shadow-[4px_0_8px_rgba(0,0,0,0.15)]">
                 <Radio className="size-3 animate-pulse" />
                 Breaking
             </div>
-            <div className="relative flex-1 overflow-hidden py-2">
-                <div className="ticker-track flex gap-8 whitespace-nowrap">
+            {/* Scrolling track */}
+            <div className="relative flex-1 overflow-hidden py-2.5">
+                <div className="ticker-track gap-12 whitespace-nowrap">
                     {items.map((a, i) => (
                         <Link
                             key={`${a.id}-${i}`}
                             href={`/news/${a.slug}`}
                             className="shrink-0 text-xs font-medium text-gray-700 transition hover:text-red-600 dark:text-gray-300 dark:hover:text-red-400"
                         >
-                            <span className="mr-2 text-red-500">•</span>
+                            <span className="mr-2 text-red-500">◆</span>
                             {a.title}
                         </Link>
                     ))}
