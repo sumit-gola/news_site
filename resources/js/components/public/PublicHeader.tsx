@@ -54,13 +54,66 @@ interface Props {
 // Max categories visible in desktop nav before "More" dropdown
 const MAX_VISIBLE_CATEGORIES = 6;
 
+/** Check if a category has grandchildren (children with their own children). */
+function hasGrandchildren(cat: Category): boolean {
+    return (cat.children ?? []).some((child) => child.children && child.children.length > 0);
+}
+
+/** Recursive mobile category item with accordion-style expand/collapse. */
+function MobileCategoryItem({
+    category,
+    depth,
+    onClose,
+}: {
+    category: Category;
+    depth: number;
+    onClose: () => void;
+}) {
+    const [open, setOpen] = useState(false);
+    const hasChildren = category.children && category.children.length > 0;
+    const pl = 5 + depth * 4; // px padding increases with depth
+
+    return (
+        <div>
+            <div className="flex items-center">
+                <Link
+                    href={`/category/${category.slug}`}
+                    className="flex flex-1 items-center gap-3 py-2.5 text-sm font-medium transition hover:bg-gray-50 dark:hover:bg-gray-800"
+                    style={{ paddingLeft: `${pl * 4}px`, paddingRight: '20px' }}
+                    onClick={onClose}
+                >
+                    <span
+                        className={`inline-block rounded-full ${depth === 0 ? 'size-2' : 'size-1.5'}`}
+                        style={{ backgroundColor: category.color }}
+                    />
+                    {category.name}
+                </Link>
+                {hasChildren && (
+                    <button
+                        onClick={() => setOpen((prev) => !prev)}
+                        className="px-4 py-2.5 text-gray-400 transition hover:text-gray-600"
+                    >
+                        <ChevronDown className={`size-4 transition-transform ${open ? 'rotate-180' : ''}`} />
+                    </button>
+                )}
+            </div>
+            {hasChildren && open && (
+                <div className="bg-gray-50/50 dark:bg-gray-800/30">
+                    {category.children!.map((child) => (
+                        <MobileCategoryItem key={child.id} category={child} depth={depth + 1} onClose={onClose} />
+                    ))}
+                </div>
+            )}
+        </div>
+    );
+}
+
 export default function PublicHeader({ navCategories }: Props) {
     const { auth } = usePage<{ auth: Auth }>().props;
     const { appearance, resolvedAppearance, updateAppearance } = useAppearance();
     const [mobileOpen, setMobileOpen] = useState(false);
     const [searchOpen, setSearchOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
-    const [mobileExpandedCats, setMobileExpandedCats] = useState<number[]>([]);
     const searchRef = useRef<HTMLInputElement>(null);
 
     const visibleCategories = navCategories.slice(0, MAX_VISIBLE_CATEGORIES);
@@ -102,10 +155,6 @@ export default function PublicHeader({ navCategories }: Props) {
         },
         [searchQuery],
     );
-
-    const toggleMobileCat = (id: number) => {
-        setMobileExpandedCats((prev) => (prev.includes(id) ? prev.filter((c) => c !== id) : [...prev, id]));
-    };
 
     const themeIcon =
         appearance === 'system' ? (
@@ -279,57 +328,112 @@ export default function PublicHeader({ navCategories }: Props) {
 
                                 <Separator orientation="vertical" className="mx-1 h-5" />
 
-                                {/* Category items with subcategory dropdowns */}
-                                {visibleCategories.map((cat) =>
-                                    cat.children && cat.children.length > 0 ? (
+                                {/* Category items — mega-menu for deep trees, simple dropdown for flat */}
+                                {visibleCategories.map((cat) => {
+                                    const children = cat.children ?? [];
+                                    if (children.length === 0) {
+                                        return (
+                                            <NavigationMenuItem key={cat.id}>
+                                                <Link href={`/category/${cat.slug}`} className={navigationMenuTriggerStyle()}>
+                                                    <span
+                                                        className="mr-1.5 inline-block size-2 rounded-full"
+                                                        style={{ backgroundColor: cat.color }}
+                                                    />
+                                                    {cat.name}
+                                                </Link>
+                                            </NavigationMenuItem>
+                                        );
+                                    }
+
+                                    const isMega = hasGrandchildren(cat);
+
+                                    return (
                                         <NavigationMenuItem key={cat.id}>
                                             <NavigationMenuTrigger className="text-sm">
                                                 <span className="mr-1.5 inline-block size-2 rounded-full" style={{ backgroundColor: cat.color }} />
                                                 {cat.name}
                                             </NavigationMenuTrigger>
                                             <NavigationMenuContent>
-                                                <div className="grid w-[340px] gap-1 p-2">
-                                                    {/* Parent category link */}
-                                                    <NavigationMenuLink asChild>
-                                                        <Link
-                                                            href={`/category/${cat.slug}`}
-                                                            className="flex items-center gap-2 rounded-md px-3 py-2.5 text-sm font-semibold transition hover:bg-accent"
-                                                        >
-                                                            <span className="inline-block size-2.5 rounded-full" style={{ backgroundColor: cat.color }} />
-                                                            All {cat.name}
-                                                            <ChevronRight className="ml-auto size-3.5 text-muted-foreground" />
-                                                        </Link>
-                                                    </NavigationMenuLink>
-                                                    <Separator />
-                                                    {cat.children.map((child) => (
-                                                        <NavigationMenuLink key={child.id} asChild>
+                                                {isMega ? (
+                                                    /* ── Mega-menu: multi-column grid for deep hierarchies ── */
+                                                    <div className="w-[600px] p-3">
+                                                        {/* "All Category" link */}
+                                                        <NavigationMenuLink asChild>
                                                             <Link
-                                                                href={`/category/${child.slug}`}
-                                                                className="flex items-center gap-2 rounded-md px-3 py-2 text-sm transition hover:bg-accent"
+                                                                href={`/category/${cat.slug}`}
+                                                                className="mb-2 flex items-center gap-2 rounded-md px-3 py-2 text-sm font-semibold transition hover:bg-accent"
                                                             >
-                                                                <span
-                                                                    className="inline-block size-1.5 rounded-full"
-                                                                    style={{ backgroundColor: child.color }}
-                                                                />
-                                                                {child.name}
+                                                                <span className="inline-block size-2.5 rounded-full" style={{ backgroundColor: cat.color }} />
+                                                                All {cat.name}
+                                                                <ChevronRight className="ml-auto size-3.5 text-muted-foreground" />
                                                             </Link>
                                                         </NavigationMenuLink>
-                                                    ))}
-                                                </div>
+                                                        <Separator className="mb-2" />
+                                                        <div className="grid max-h-[400px] grid-cols-2 gap-x-4 gap-y-1 overflow-y-auto">
+                                                            {children.map((child) => (
+                                                                <div key={child.id} className="mb-2">
+                                                                    <NavigationMenuLink asChild>
+                                                                        <Link
+                                                                            href={`/category/${child.slug}`}
+                                                                            className="mb-0.5 flex items-center gap-2 rounded-md px-2 py-1.5 text-sm font-semibold transition hover:bg-accent"
+                                                                        >
+                                                                            <span className="inline-block size-2 rounded-full" style={{ backgroundColor: child.color }} />
+                                                                            {child.name}
+                                                                        </Link>
+                                                                    </NavigationMenuLink>
+                                                                    {child.children && child.children.length > 0 && (
+                                                                        <div className="ml-4 flex flex-col gap-0.5">
+                                                                            {child.children.map((grandchild) => (
+                                                                                <NavigationMenuLink key={grandchild.id} asChild>
+                                                                                    <Link
+                                                                                        href={`/category/${grandchild.slug}`}
+                                                                                        className="flex items-center gap-2 rounded-md px-2 py-1 text-xs text-muted-foreground transition hover:bg-accent hover:text-foreground"
+                                                                                    >
+                                                                                        <span className="inline-block size-1 rounded-full" style={{ backgroundColor: grandchild.color }} />
+                                                                                        {grandchild.name}
+                                                                                    </Link>
+                                                                                </NavigationMenuLink>
+                                                                            ))}
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                ) : (
+                                                    /* ── Simple dropdown for flat children ── */
+                                                    <div className="grid w-[340px] gap-1 p-2">
+                                                        <NavigationMenuLink asChild>
+                                                            <Link
+                                                                href={`/category/${cat.slug}`}
+                                                                className="flex items-center gap-2 rounded-md px-3 py-2.5 text-sm font-semibold transition hover:bg-accent"
+                                                            >
+                                                                <span className="inline-block size-2.5 rounded-full" style={{ backgroundColor: cat.color }} />
+                                                                All {cat.name}
+                                                                <ChevronRight className="ml-auto size-3.5 text-muted-foreground" />
+                                                            </Link>
+                                                        </NavigationMenuLink>
+                                                        <Separator />
+                                                        {children.map((child) => (
+                                                            <NavigationMenuLink key={child.id} asChild>
+                                                                <Link
+                                                                    href={`/category/${child.slug}`}
+                                                                    className="flex items-center gap-2 rounded-md px-3 py-2 text-sm transition hover:bg-accent"
+                                                                >
+                                                                    <span
+                                                                        className="inline-block size-1.5 rounded-full"
+                                                                        style={{ backgroundColor: child.color }}
+                                                                    />
+                                                                    {child.name}
+                                                                </Link>
+                                                            </NavigationMenuLink>
+                                                        ))}
+                                                    </div>
+                                                )}
                                             </NavigationMenuContent>
                                         </NavigationMenuItem>
-                                    ) : (
-                                        <NavigationMenuItem key={cat.id}>
-                                            <Link href={`/category/${cat.slug}`} className={navigationMenuTriggerStyle()}>
-                                                <span
-                                                    className="mr-1.5 inline-block size-2 rounded-full"
-                                                    style={{ backgroundColor: cat.color }}
-                                                />
-                                                {cat.name}
-                                            </Link>
-                                        </NavigationMenuItem>
-                                    ),
-                                )}
+                                    );
+                                })}
 
                                 {/* "More" dropdown for overflow categories */}
                                 {overflowCategories.length > 0 && (
@@ -477,45 +581,7 @@ export default function PublicHeader({ navCategories }: Props) {
                         <p className="px-5 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-gray-400">Categories</p>
 
                         {navCategories.map((cat) => (
-                            <div key={cat.id}>
-                                <div className="flex items-center">
-                                    <Link
-                                        href={`/category/${cat.slug}`}
-                                        className="flex flex-1 items-center gap-3 px-5 py-2.5 text-sm font-medium transition hover:bg-gray-50 dark:hover:bg-gray-800"
-                                        onClick={() => setMobileOpen(false)}
-                                    >
-                                        <span className="inline-block size-2 rounded-full" style={{ backgroundColor: cat.color }} />
-                                        {cat.name}
-                                    </Link>
-                                    {cat.children && cat.children.length > 0 && (
-                                        <button
-                                            onClick={() => toggleMobileCat(cat.id)}
-                                            className="px-4 py-2.5 text-gray-400 transition hover:text-gray-600"
-                                        >
-                                            <ChevronDown
-                                                className={`size-4 transition-transform ${mobileExpandedCats.includes(cat.id) ? 'rotate-180' : ''}`}
-                                            />
-                                        </button>
-                                    )}
-                                </div>
-
-                                {/* Subcategories */}
-                                {cat.children && cat.children.length > 0 && mobileExpandedCats.includes(cat.id) && (
-                                    <div className="bg-gray-50 dark:bg-gray-800/50">
-                                        {cat.children.map((child) => (
-                                            <Link
-                                                key={child.id}
-                                                href={`/category/${child.slug}`}
-                                                className="flex items-center gap-3 py-2 pl-10 pr-5 text-sm text-gray-600 transition hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-200"
-                                                onClick={() => setMobileOpen(false)}
-                                            >
-                                                <span className="inline-block size-1.5 rounded-full" style={{ backgroundColor: child.color }} />
-                                                {child.name}
-                                            </Link>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
+                            <MobileCategoryItem key={cat.id} category={cat} depth={0} onClose={() => setMobileOpen(false)} />
                         ))}
 
                         <Separator className="my-2" />

@@ -323,12 +323,41 @@ class PublicController extends Controller
 
     // ─── Helper ───────────────────────────────────────────────────────────────
 
-    private function navCategories(): \Illuminate\Support\Collection
+    private function navCategories(): array
     {
-        return Category::active()
+        $categories = Category::active()
             ->whereNull('parent_id')
+            ->with('activeChildren')
             ->orderBy('order')
-            ->get(['id', 'name', 'slug', 'color']);
+            ->get(['id', 'name', 'slug', 'color', 'icon']);
+
+        return $this->mapCategoryChildren($categories);
+    }
+
+    /**
+     * Recursively map 'activeChildren' → 'children' for frontend consumption.
+     */
+    private function mapCategoryChildren(\Illuminate\Support\Collection $categories): array
+    {
+        return $categories->map(function (Category $cat) {
+            $data = [
+                'id'    => $cat->id,
+                'name'  => $cat->name,
+                'slug'  => $cat->slug,
+                'color' => $cat->color,
+                'icon'  => $cat->icon,
+            ];
+
+            $children = $cat->relationLoaded('activeChildren')
+                ? $cat->activeChildren
+                : collect();
+
+            $data['children'] = $children->isNotEmpty()
+                ? $this->mapCategoryChildren($children)
+                : [];
+
+            return $data;
+        })->all();
     }
 
     private function articleCardData(Article $article): array

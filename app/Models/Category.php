@@ -65,6 +65,17 @@ class Category extends Model
     }
 
     /**
+     * Active children with recursive eager-loading for nav menus.
+     */
+    public function activeChildren(): HasMany
+    {
+        return $this->hasMany(Category::class, 'parent_id')
+            ->where('is_active', true)
+            ->with('activeChildren')
+            ->orderBy('order');
+    }
+
+    /**
      * All articles in this category.
      */
     public function articles(): BelongsToMany
@@ -222,12 +233,17 @@ class Category extends Model
         $originalSlug = $slug;
         $count = 1;
 
-        $query = static::where('slug', $slug);
-        if ($exceptId) {
-            $query->where('id', '!=', $exceptId);
-        }
+        while (true) {
+            $query = static::where('slug', $slug);
 
-        while ($query->exists()) {
+            if ($exceptId) {
+                $query->where('id', '!=', $exceptId);
+            }
+
+            if (! $query->exists()) {
+                break;
+            }
+
             $slug = "{$originalSlug}-{$count}";
             $count++;
         }
