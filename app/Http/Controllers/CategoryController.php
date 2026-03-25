@@ -20,21 +20,29 @@ class CategoryController extends Controller
     {
         $this->authorize('viewAny', Category::class);
 
-        // Get main categories with their children
+        $includeInactive = $request->boolean('include_inactive');
+
+        // Load 3 levels deep: main → children → grandchildren
         $categories = Category::main()
-            ->when(!$request->include_inactive, fn ($q) => $q->active())
-            ->with(['children' => function ($q) {
+            ->when(!$includeInactive, fn ($q) => $q->active())
+            ->with(['children' => function ($q) use ($includeInactive) {
                 $q->orderBy('order');
-                if (!request()->include_inactive) {
-                    $q->where('is_active', true);
-                }
+                if (!$includeInactive) $q->where('is_active', true);
+                $q->with(['children' => function ($q2) use ($includeInactive) {
+                    $q2->orderBy('order');
+                    if (!$includeInactive) $q2->where('is_active', true);
+                }]);
             }])
             ->orderBy('order')
             ->get();
 
+        // Flat list for the category combobox in the modal
+        $allCategories = Category::orderBy('name')->get(['id', 'name', 'color', 'parent_id', 'is_active']);
+
         return Inertia::render('categories/Index', [
             'categories'      => $categories,
-            'include_inactive' => $request->boolean('include_inactive'),
+            'allCategories'   => $allCategories,
+            'include_inactive' => $includeInactive,
             'can_manage'      => $request->user()->can('create', Category::class),
             'flash'           => [
                 'success' => session('success'),
@@ -50,11 +58,8 @@ class CategoryController extends Controller
     {
         $this->authorize('create', Category::class);
 
-        // Parent categories for selection
-        $parentCategories = Category::active()
-            ->whereNull('parent_id')
-            ->orderBy('name')
-            ->get(['id', 'name']);
+        // All active categories for combobox (supports any depth as parent)
+        $parentCategories = Category::active()->orderBy('name')->get(['id', 'name', 'color', 'parent_id', 'is_active']);
 
         // Get parent if editing subcategory
         $parent = null;
@@ -91,11 +96,10 @@ class CategoryController extends Controller
             'is_active'         => ['boolean'],
         ]);
 
-        // Validate parent category is not self or descendant
+        // Validate parent exists (no depth limit — supports sub-sub-categories)
         if (!empty($validated['parent_id'])) {
-            $parent = Category::find($validated['parent_id']);
-            if (!$parent || $parent->parent_id !== null) {
-                return back()->withErrors(['parent_id' => 'Parent must be a main category.'])->withInput();
+            if (!Category::find($validated['parent_id'])) {
+                return back()->withErrors(['parent_id' => 'Selected parent category does not exist.'])->withInput();
             }
         }
 
@@ -143,12 +147,12 @@ class CategoryController extends Controller
     {
         $this->authorize('update', $category);
 
-        // Available parent categories (exclude self and descendants)
+        // All active categories except self and its descendants
+        $excludeIds = array_merge([$category->id], $category->descendants()->pluck('id')->toArray());
         $parentCategories = Category::active()
-            ->whereNull('parent_id')
-            ->where('id', '!=', $category->id)
+            ->whereNotIn('id', $excludeIds)
             ->orderBy('name')
-            ->get(['id', 'name']);
+            ->get(['id', 'name', 'color', 'parent_id', 'is_active']);
 
         return Inertia::render('categories/Edit', [
             'category'           => $category->load(['parent', 'children']),
