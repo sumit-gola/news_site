@@ -25,15 +25,7 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import {
-    NavigationMenu,
-    NavigationMenuContent,
-    NavigationMenuItem,
-    NavigationMenuLink,
-    NavigationMenuList,
-    NavigationMenuTrigger,
-    navigationMenuTriggerStyle,
-} from '@/components/ui/navigation-menu';
+import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
 import { Separator } from '@/components/ui/separator';
 import {
     Sheet,
@@ -105,6 +97,79 @@ function MobileCategoryItem({
                 </div>
             )}
         </div>
+    );
+}
+
+const NAV_TAB_CLS =
+    'inline-flex h-9 items-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium transition-colors ' +
+    'text-gray-700 hover:bg-gray-100 hover:text-gray-900 ' +
+    'dark:text-gray-300 dark:hover:bg-gray-800 dark:hover:text-gray-100';
+
+/**
+ * Shared hover card content for a category.
+ * Renders MegaMenu for deep trees, SimpleCategoryList for flat ones.
+ */
+function CategoryDropdownContent({ cat }: { cat: Category }) {
+    if (hasGrandchildren(cat)) {
+        return <MegaMenu category={cat} />;
+    }
+    return <SimpleCategoryList category={cat} />;
+}
+
+/** Category tab — shows CategoryDropdownContent in a HoverCard below the tab. */
+function CategoryNavTab({ cat }: { cat: Category }) {
+    const hasChildren = (cat.children ?? []).length > 0;
+
+    if (!hasChildren) {
+        return (
+            <Link href={`/category/${cat.slug}`} className={NAV_TAB_CLS}>
+                <span className="inline-block size-2 rounded-full" style={{ backgroundColor: cat.color }} />
+                {cat.name}
+            </Link>
+        );
+    }
+
+    return (
+        <HoverCard openDelay={100} closeDelay={150}>
+            <HoverCardTrigger asChild>
+                <Link href={`/category/${cat.slug}`} className={NAV_TAB_CLS}>
+                    <span className="inline-block size-2 rounded-full" style={{ backgroundColor: cat.color }} />
+                    {cat.name}
+                    <ChevronDown className="size-3.5" />
+                </Link>
+            </HoverCardTrigger>
+            <HoverCardContent align="start" sideOffset={0} className="w-auto p-0 shadow-xl">
+                <CategoryDropdownContent cat={cat} />
+            </HoverCardContent>
+        </HoverCard>
+    );
+}
+
+/** "More" overflow tab — same HoverCard pattern with a flat category list. */
+function MoreNavTab({ categories }: { categories: Category[] }) {
+    return (
+        <HoverCard openDelay={100} closeDelay={150}>
+            <HoverCardTrigger asChild>
+                <button className={NAV_TAB_CLS}>
+                    More
+                    <ChevronDown className="size-3.5" />
+                </button>
+            </HoverCardTrigger>
+            <HoverCardContent align="start" sideOffset={0} className="w-auto p-0 shadow-xl">
+                <div className="grid w-[260px] gap-0.5 p-2">
+                    {categories.map((cat) => (
+                        <Link
+                            key={cat.id}
+                            href={`/category/${cat.slug}`}
+                            className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-gray-700 transition-colors hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800"
+                        >
+                            <span className="inline-block size-2 rounded-full" style={{ backgroundColor: cat.color }} />
+                            {cat.name}
+                        </Link>
+                    ))}
+                </div>
+            </HoverCardContent>
+        </HoverCard>
     );
 }
 
@@ -310,84 +375,29 @@ export default function PublicHeader({ navCategories }: Props) {
                 {/* ── Navigation Row: Categories ─────────────────────── */}
                 <div className="hidden border-t border-gray-100 bg-white dark:border-gray-800 dark:bg-gray-900 md:block">
                     <div className="mx-auto max-w-7xl px-4">
-                        <NavigationMenu className="mx-0 max-w-none justify-start">
-                            <NavigationMenuList className="gap-0">
-                                {/* Home */}
-                                <NavigationMenuItem>
-                                    <Link href="/" className={navigationMenuTriggerStyle()}>
-                                        Home
-                                    </Link>
-                                </NavigationMenuItem>
+                        <nav className="flex items-center">
+                            {/* Home */}
+                            <Link href="/" className={NAV_TAB_CLS}>
+                                Home
+                            </Link>
 
-                                {/* Latest News */}
-                                <NavigationMenuItem>
-                                    <Link href="/news" className={navigationMenuTriggerStyle()}>
-                                        Latest News
-                                    </Link>
-                                </NavigationMenuItem>
+                            {/* Latest News */}
+                            <Link href="/news" className={NAV_TAB_CLS}>
+                                Latest News
+                            </Link>
 
-                                <Separator orientation="vertical" className="mx-1 h-5" />
+                            <Separator orientation="vertical" className="mx-1 h-5" />
 
-                                {/* Category items — mega-menu for deep trees, simple dropdown for flat */}
-                                {visibleCategories.map((cat) => {
-                                    const children = cat.children ?? [];
-                                    if (children.length === 0) {
-                                        return (
-                                            <NavigationMenuItem key={cat.id}>
-                                                <Link href={`/category/${cat.slug}`} className={navigationMenuTriggerStyle()}>
-                                                    <span
-                                                        className="mr-1.5 inline-block size-2 rounded-full"
-                                                        style={{ backgroundColor: cat.color }}
-                                                    />
-                                                    {cat.name}
-                                                </Link>
-                                            </NavigationMenuItem>
-                                        );
-                                    }
+                            {/* Per-tab hover dropdowns */}
+                            {visibleCategories.map((cat) => (
+                                <CategoryNavTab key={cat.id} cat={cat} />
+                            ))}
 
-                                    return (
-                                        <NavigationMenuItem key={cat.id}>
-                                            <NavigationMenuTrigger className="text-sm">
-                                                <span className="mr-1.5 inline-block size-2 rounded-full" style={{ backgroundColor: cat.color }} />
-                                                {cat.name}
-                                            </NavigationMenuTrigger>
-                                            <NavigationMenuContent>
-                                                {hasGrandchildren(cat) ? (
-                                                    <MegaMenu category={cat} />
-                                                ) : (
-                                                    <SimpleCategoryList category={cat} />
-                                                )}
-                                            </NavigationMenuContent>
-                                        </NavigationMenuItem>
-                                    );
-                                })}
-
-                                {/* "More" dropdown for overflow categories */}
-                                {overflowCategories.length > 0 && (
-                                    <NavigationMenuItem>
-                                        <NavigationMenuTrigger className="text-sm">More</NavigationMenuTrigger>
-                                        <NavigationMenuContent>
-                                            <div className="grid w-[280px] gap-1 p-2">
-                                                {overflowCategories.map((cat) => (
-                                                    <NavigationMenuLink key={cat.id} asChild>
-                                                        <Link
-                                                            href={`/category/${cat.slug}`}
-                                                            className="flex items-center gap-2 rounded-md px-3 py-2 text-sm transition hover:bg-accent"
-                                                        >
-                                                            <span
-                                                                className="inline-block size-2 rounded-full"
-                                                                style={{ backgroundColor: cat.color }}
-                                                            />
-                                                            {cat.name}
-                                                        </Link>
-                                                    </NavigationMenuLink>
-                                                ))}
-                                            </div>
-                                        </NavigationMenuContent>
-                                    </NavigationMenuItem>
-                                )}
-                            </NavigationMenuList>
-                        </NavigationMenu>
+                            {/* Overflow "More" */}
+                            {overflowCategories.length > 0 && (
+                                <MoreNavTab categories={overflowCategories} />
+                            )}
+                        </nav>
                     </div>
                 </div>
             </header>
