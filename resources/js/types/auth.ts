@@ -103,6 +103,39 @@ export type ArticlePermissions = {
     publish: boolean;
 };
 
+export type PageSeoMeta = {
+    meta_title: string | null;
+    meta_description: string | null;
+    meta_keywords: string | null;
+    og_image: string | null;
+    canonical_url: string | null;
+};
+
+export type Page = {
+    id: number;
+    title: string;
+    slug: string;
+    excerpt: string | null;
+    content: string | null;
+    featured_image: string | null;
+    featured_image_url: string | null;
+    category_id: number | null;
+    category?: Category | null;
+    user_id: number;
+    author?: User | null;
+    status: 'draft' | 'published';
+    template: 'default' | 'full-width' | 'landing';
+    published_at: string | null;
+    show_in_menu: boolean;
+    is_featured: boolean;
+    noindex: boolean;
+    seo_meta: PageSeoMeta | null;
+    order: number;
+    views: number;
+    created_at: string;
+    updated_at: string;
+};
+
 export type Article = {
     id: number;
     title: string;

@@ -102,11 +102,12 @@ function AdminNav({ activeAdsCount }: { activeAdsCount: number }) {
     const { url } = usePage();
 
     const items = [
-        { title: 'User Management', href: '/admin/users', icon: Users },
-        { title: 'Roles & Permissions', href: '/admin/roles', icon: Shield },
-        { title: 'Articles', href: '/admin/articles', icon: Newspaper },
-        { title: 'Categories', href: '/categories', icon: BookOpen },
-        { title: 'Settings', href: '/settings/profile', icon: Settings },
+        { title: 'User Management',    href: '/admin/users',       icon: Users     },
+        { title: 'Roles & Permissions', href: '/admin/roles',       icon: Shield    },
+        { title: 'Articles',            href: '/admin/articles',    icon: Newspaper },
+        { title: 'Pages',               href: '/pages',             icon: FileText  },
+        { title: 'Categories',          href: '/categories',        icon: BookOpen  },
+        { title: 'Settings',            href: '/settings/profile',  icon: Settings  },
     ];
 
     return (
@@ -195,6 +196,7 @@ function ManagerNav() {
     const items = [
         { title: 'Manager Dashboard', href: '/manager/dashboard', icon: LayoutGrid },
         { title: 'Articles',          href: '/articles',          icon: Newspaper  },
+        { title: 'Pages',             href: '/pages',             icon: FileText   },
         { title: 'Categories',        href: '/categories',        icon: BookOpen   },
     ];
 

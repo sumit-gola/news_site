@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\PageController;
 use App\Http\Controllers\PublicController;
 use Illuminate\Support\Facades\Route;
 
@@ -12,6 +13,9 @@ Route::get('/category/{category:slug}', [PublicController::class, 'category'])->
 Route::get('/tag/{tag:slug}', [PublicController::class, 'tag'])->name('public.tag.show');
 Route::get('/author/{authorSlug}', [PublicController::class, 'author'])->name('public.author.show');
 Route::get('/search', [PublicController::class, 'search'])->name('public.search');
+
+// ── CMS Dynamic Pages ─────────────────────────────────────────────────────────
+Route::get('/page/{page:slug}', [PageController::class, 'showPublic'])->name('public.page.show');
 
 Route::get('/about-us', [PublicController::class, 'staticPage'])->defaults('slug', 'about-us')->name('public.about');
 Route::get('/contact-us', [PublicController::class, 'staticPage'])->defaults('slug', 'contact-us')->name('public.contact');

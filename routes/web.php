@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\AdSlotController as PublicAdSlotController;
 use App\Http\Controllers\ArticleController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\EditorImageController;
+use App\Http\Controllers\PageController;
 use App\Models\Article;
 use App\Models\Category;
 use Illuminate\Support\Facades\Route;
@@ -65,6 +66,17 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // ── Editor Image Upload ──
     Route::post('editor/images/upload', [EditorImageController::class, 'upload'])->name('editor.images.upload');
+
+    // ── CMS Page Management ──
+    Route::get('pages', [PageController::class, 'index'])->name('pages.index');
+    Route::get('pages/create', [PageController::class, 'create'])->name('pages.create');
+    Route::post('pages', [PageController::class, 'store'])->name('pages.store');
+    Route::get('pages/{page:slug}/edit', [PageController::class, 'edit'])->name('pages.edit');
+    Route::put('pages/{page:slug}', [PageController::class, 'update'])->name('pages.update');
+    Route::delete('pages/{page:slug}', [PageController::class, 'destroy'])->name('pages.destroy');
+    Route::post('pages/{page:slug}/duplicate', [PageController::class, 'duplicate'])->name('pages.duplicate');
+    Route::patch('pages/{page:slug}/publish', [PageController::class, 'publish'])->name('pages.publish');
+    Route::patch('pages/{page:slug}/unpublish', [PageController::class, 'unpublish'])->name('pages.unpublish');
 
     // ── Article Management ──
     Route::get('articles', [ArticleController::class, 'index'])->name('articles.index');
