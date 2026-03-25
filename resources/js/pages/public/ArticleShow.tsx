@@ -110,24 +110,10 @@ export default function ArticleShow({ article, related, trending }: Props) {
     const wordCount = article.meta?.word_count ?? article.content.split(' ').length;
     const primaryCategoryId = article.categories?.[0]?.id;
     const bookmarkKey = `bookmark:${article.id}`;
-    const [scrollProgress, setScrollProgress] = useState(0);
     const [bookmarked, setBookmarked] = useState<boolean>(() => {
         if (typeof window === 'undefined') return false;
         return localStorage.getItem(bookmarkKey) === '1';
     });
-
-    useEffect(() => {
-        const onScroll = () => {
-            const scrollTop = window.scrollY;
-            const docHeight = document.documentElement.scrollHeight - window.innerHeight;
-            const progress = docHeight > 0 ? (scrollTop / docHeight) * 100 : 0;
-            setScrollProgress(Math.min(100, Math.max(0, progress)));
-        };
-
-        onScroll();
-        window.addEventListener('scroll', onScroll, { passive: true });
-        return () => window.removeEventListener('scroll', onScroll);
-    }, []);
 
     const toggleBookmark = () => {
         const next = !bookmarked;
@@ -162,10 +148,6 @@ export default function ArticleShow({ article, related, trending }: Props) {
                     <meta property="article:published_time" content={article.published_at} />
                 ) : undefined}
             </Head>
-
-            <div className="fixed left-0 right-0 top-[58px] z-40 h-1 bg-transparent md:top-[104px]">
-                <div className="h-full bg-red-600 transition-[width] duration-100" style={{ width: `${scrollProgress}%` }} />
-            </div>
 
             {/* Hero Image */}
             {article.featured_image_url && (
