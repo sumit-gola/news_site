@@ -1,5 +1,5 @@
 import { Head, Link, router } from '@inertiajs/react';
-import { Clock, Eye, ChevronLeft, ChevronRight, TrendingUp, Flame, Tag as TagIcon, ArrowRight, LayoutGrid, List } from 'lucide-react';
+import { Clock, Eye, ChevronLeft, ChevronRight, TrendingUp, Flame, Tag as TagIcon, ArrowRight, LayoutGrid, List, BookOpen, User } from 'lucide-react';
 import { useState } from 'react';
 import AdSlot from '@/components/ads/AdSlot';
 import PublicLayout from '@/layouts/public-layout';
@@ -108,33 +108,124 @@ function GridCard({ article, accentColor }: { article: Article; accentColor: str
     );
 }
 
-/** List card — horizontal, image left */
+/** List card — rich horizontal card with full article info */
 function ListCard({ article, accentColor, rank }: { article: Article; accentColor: string; rank?: number }) {
+    const cat = article.categories?.[0];
+    const isNew = article.published_at
+        ? (Date.now() - new Date(article.published_at).getTime()) < 86400000 * 2
+        : false;
+    const readTime = article.meta?.read_time;
+    const authorInitials = article.author?.name
+        ? article.author.name.split(' ').slice(0, 2).map((n: string) => n[0]).join('').toUpperCase()
+        : '?';
+
     return (
         <Link href={`/news/${article.slug}`}
-            className="group flex gap-3 rounded-xl border border-gray-100 bg-white p-2.5 shadow-sm transition hover:shadow-md dark:border-gray-800 dark:bg-gray-900">
+            className="group relative flex gap-0 overflow-hidden rounded-xl border border-gray-100 bg-white shadow-sm transition hover:shadow-md hover:border-gray-200 dark:border-gray-800 dark:bg-gray-900 dark:hover:border-gray-700">
+
+            {/* left accent bar on hover */}
+            <div className="absolute inset-y-0 left-0 w-0.5 rounded-l-xl opacity-0 transition-opacity duration-200 group-hover:opacity-100"
+                style={{ backgroundColor: accentColor }} />
+
+            {/* rank badge */}
             {rank !== undefined && (
-                <div className="flex size-6 shrink-0 items-center justify-center self-start rounded-full text-[11px] font-black text-white"
-                    style={{ backgroundColor: accentColor }}>
-                    {rank}
+                <div className="flex w-9 shrink-0 flex-col items-center justify-start pt-4">
+                    <span className={`flex size-6 items-center justify-center rounded-full text-[11px] font-black text-white`}
+                        style={{ backgroundColor: rank <= 3 ? accentColor : '#9ca3af' }}>
+                        {rank}
+                    </span>
                 </div>
             )}
-            {article.featured_image_url ? (
-                <img src={article.featured_image_url} alt={article.title}
-                    className="size-16 shrink-0 rounded-lg object-cover transition group-hover:opacity-90" />
-            ) : (
-                <div className="flex size-16 shrink-0 items-center justify-center rounded-lg text-xl font-black"
-                    style={{ background: `${accentColor}18`, color: `${accentColor}60` }}>
-                    {article.title[0]}
+
+            {/* thumbnail */}
+            <div className={`shrink-0 ${rank !== undefined ? 'ml-0' : 'ml-3'} my-3`}>
+                {article.featured_image_url ? (
+                    <img src={article.featured_image_url} alt={article.title}
+                        className="h-[88px] w-28 rounded-lg object-cover transition duration-300 group-hover:brightness-95" />
+                ) : (
+                    <div className="flex h-[88px] w-28 items-center justify-center rounded-lg text-3xl font-black"
+                        style={{ background: `${accentColor}15`, color: `${accentColor}50` }}>
+                        {article.title[0]}
+                    </div>
+                )}
+            </div>
+
+            {/* content */}
+            <div className="flex min-w-0 flex-1 flex-col justify-between gap-1 py-3 pl-3 pr-4">
+
+                {/* top: category + new badge */}
+                <div className="flex items-center gap-1.5">
+                    {cat && (
+                        <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white"
+                            style={{ backgroundColor: cat.color ?? accentColor }}>
+                            {cat.name}
+                        </span>
+                    )}
+                    {isNew && (
+                        <span className="inline-flex items-center gap-0.5 rounded-full bg-red-500 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">
+                            New
+                        </span>
+                    )}
+                    {article.views > 3000 && (
+                        <span className="inline-flex items-center gap-0.5 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
+                            <TrendingUp className="size-2.5" /> Hot
+                        </span>
+                    )}
                 </div>
-            )}
-            <div className="min-w-0 flex-1">
-                <h4 className="line-clamp-2 text-[12px] font-semibold leading-snug transition group-hover:text-red-600 dark:group-hover:text-red-400">
+
+                {/* title */}
+                <h4 className="line-clamp-2 text-[13px] font-bold leading-snug text-gray-900 transition group-hover:text-red-600 dark:text-gray-100 dark:group-hover:text-red-400">
                     {article.title}
                 </h4>
-                <div className="mt-1 flex items-center gap-2 text-[10px] text-gray-400">
-                    {article.published_at && <span className="flex items-center gap-0.5"><Clock className="size-2.5" />{fmt(article.published_at)}</span>}
-                    <span className="flex items-center gap-0.5"><Eye className="size-2.5" />{article.views.toLocaleString()}</span>
+
+                {/* excerpt */}
+                {article.excerpt && (
+                    <p className="line-clamp-1 text-[11px] text-gray-500 dark:text-gray-400">
+                        {article.excerpt}
+                    </p>
+                )}
+
+                {/* bottom meta */}
+                <div className="flex items-center gap-2.5 text-[10px] text-gray-400">
+                    {/* author */}
+                    {article.author && (
+                        <div className="flex items-center gap-1">
+                            <span className="flex size-4 items-center justify-center rounded-full text-[8px] font-bold text-white"
+                                style={{ backgroundColor: accentColor }}>
+                                {authorInitials}
+                            </span>
+                            <span className="font-medium text-gray-600 dark:text-gray-300">{article.author.name}</span>
+                        </div>
+                    )}
+
+                    {article.author && article.published_at && <span className="text-gray-300 dark:text-gray-600">·</span>}
+
+                    {/* date */}
+                    {article.published_at && (
+                        <span className="flex items-center gap-0.5">
+                            <Clock className="size-2.5" />
+                            {fmt(article.published_at)}
+                        </span>
+                    )}
+
+                    {/* read time */}
+                    {readTime && (
+                        <>
+                            <span className="text-gray-300 dark:text-gray-600">·</span>
+                            <span className="flex items-center gap-0.5">
+                                <BookOpen className="size-2.5" />
+                                {readTime} min read
+                            </span>
+                        </>
+                    )}
+
+                    {/* views */}
+                    <span className="ml-auto flex items-center gap-0.5 font-medium">
+                        <Eye className="size-2.5" />
+                        {article.views >= 1000
+                            ? `${(article.views / 1000).toFixed(1)}k`
+                            : article.views.toLocaleString()}
+                    </span>
                 </div>
             </div>
         </Link>
