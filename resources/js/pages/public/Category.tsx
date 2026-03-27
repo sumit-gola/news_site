@@ -239,7 +239,7 @@ export default function CategoryPage({ category, articles, tags = [], filters = 
         const merged = { sort: selectedSort, tag: selectedTag, ...next };
         if (merged.sort && merged.sort !== 'latest') payload.sort = merged.sort;
         if (merged.tag) payload.tag = merged.tag;
-        router.get(`/category/${category.slug}`, payload, { preserveState: true, preserveScroll: true, replace: true });
+        router.get(`/category/${category.slug}`, payload, { preserveScroll: true });
     };
 
     return (

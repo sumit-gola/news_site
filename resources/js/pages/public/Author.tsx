@@ -210,7 +210,7 @@ export default function AuthorPage({ author, stats, mostRead, authorCategories, 
     const updateSort = (sort: string) => {
         const params: Record<string, string> = {};
         if (sort !== 'latest') params.sort = sort;
-        router.get(`/author/${author.slug}`, params, { preserveState: true, preserveScroll: true, replace: true });
+        router.get(`/author/${author.slug}`, params, { preserveScroll: true });
     };
 
     return (

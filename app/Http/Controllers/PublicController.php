@@ -34,10 +34,9 @@ class PublicController extends Controller
             ->when($request->get('author'), fn ($q, $authorId) => $q->where('user_id', (int) $authorId))
             ->when($request->get('from_date'), fn ($q, $fromDate) => $q->whereDate('published_at', '>=', $fromDate))
             ->when($request->get('to_date'), fn ($q, $toDate) => $q->whereDate('published_at', '<=', $toDate))
-            ->when($request->get('sort') === 'popular', fn ($q) => $q->orderByDesc('views'))
-            ->when($request->get('sort') === 'latest' || !$request->get('sort'), fn ($q) => $q->orderByDesc('published_at'))
-            ->when($request->get('sort') === 'oldest', fn ($q) => $q->orderBy('published_at'))
-            ->when($request->get('sort') === 'title', fn ($q) => $q->orderBy('title'))
+            ->when($request->get('sort') === 'popular', fn ($q) => $q->reorder('views', 'desc'))
+            ->when($request->get('sort') === 'oldest',  fn ($q) => $q->reorder('published_at', 'asc'))
+            ->when($request->get('sort') === 'title',   fn ($q) => $q->reorder('title', 'asc'))
             ->paginate((int) $request->integer('per_page', 12))
             ->withQueryString()
             ->through(fn (Article $a) => $this->articleCardData($a));
@@ -176,9 +175,8 @@ class PublicController extends Controller
             ->with(['author:id,name', 'categories:id,name,color,slug'])
             ->whereHas('categories', fn ($q) => $q->where('categories.id', $category->id))
             ->when($request->get('tag'), fn ($q, $slug) => $q->whereHas('tags', fn ($tq) => $tq->where('slug', $slug)))
-            ->when($request->get('sort') === 'popular', fn ($q) => $q->orderByDesc('views'))
-            ->when($request->get('sort') === 'latest' || !$request->get('sort'), fn ($q) => $q->orderByDesc('published_at'))
-            ->when($request->get('sort') === 'oldest', fn ($q) => $q->orderBy('published_at'))
+            ->when($request->get('sort') === 'popular', fn ($q) => $q->reorder('views', 'desc'))
+            ->when($request->get('sort') === 'oldest',  fn ($q) => $q->reorder('published_at', 'asc'))
             ->paginate(12)
             ->withQueryString()
             ->through(fn (Article $a) => $this->articleCardData($a));
@@ -225,9 +223,8 @@ class PublicController extends Controller
         $articles = Article::published()
             ->with(['author:id,name', 'categories:id,name,color,slug', 'tags:id,name,slug'])
             ->whereHas('tags', fn ($q) => $q->where('tags.id', $tag->id))
-            ->when($request->get('sort') === 'popular', fn ($q) => $q->orderByDesc('views'))
-            ->when($request->get('sort') === 'latest' || !$request->get('sort'), fn ($q) => $q->orderByDesc('published_at'))
-            ->when($request->get('sort') === 'oldest', fn ($q) => $q->orderBy('published_at'))
+            ->when($request->get('sort') === 'popular', fn ($q) => $q->reorder('views', 'desc'))
+            ->when($request->get('sort') === 'oldest',  fn ($q) => $q->reorder('published_at', 'asc'))
             ->paginate(12)
             ->withQueryString()
             ->through(fn (Article $a) => $this->articleCardData($a));
@@ -251,9 +248,8 @@ class PublicController extends Controller
         $articles = Article::published()
             ->with(['author:id,name', 'categories:id,name,color,slug', 'tags:id,name,slug'])
             ->where('user_id', $author->id)
-            ->when($request->get('sort') === 'popular', fn ($q) => $q->orderByDesc('views'))
-            ->when($request->get('sort') === 'latest' || !$request->get('sort'), fn ($q) => $q->orderByDesc('published_at'))
-            ->when($request->get('sort') === 'oldest', fn ($q) => $q->orderBy('published_at'))
+            ->when($request->get('sort') === 'popular', fn ($q) => $q->reorder('views', 'desc'))
+            ->when($request->get('sort') === 'oldest',  fn ($q) => $q->reorder('published_at', 'asc'))
             ->paginate(12)
             ->withQueryString()
             ->through(fn (Article $a) => $this->articleCardData($a));
@@ -272,8 +268,8 @@ class PublicController extends Controller
             ->map(fn (Article $a) => $this->articleCardData($a));
 
         // Categories the author writes in most
-        $authorCategories = \App\Models\Category::withCount(['articles' => fn ($q) => $q->where('status', 'published')->where('user_id', $author->id)])
-            ->having('articles_count', '>', 0)
+        $authorCategories = \App\Models\Category::whereHas('articles', fn ($q) => $q->where('status', 'published')->where('user_id', $author->id))
+            ->withCount(['articles' => fn ($q) => $q->where('status', 'published')->where('user_id', $author->id)])
             ->orderByDesc('articles_count')
             ->limit(8)
             ->get(['id', 'name', 'slug', 'color', 'icon']);
@@ -314,9 +310,8 @@ class PublicController extends Controller
                         ->orWhereHas('tags', fn ($tq) => $tq->where('tags.name', 'like', "%{$q}%"));
                 })
                 ->when($request->get('category'), fn ($query, $slug) => $query->whereHas('categories', fn ($catQuery) => $catQuery->where('slug', $slug)))
-                ->when($request->get('sort') === 'popular', fn ($query) => $query->orderByDesc('views'))
-                ->when($request->get('sort') === 'latest' || !$request->get('sort'), fn ($query) => $query->orderByDesc('published_at'))
-                ->when($request->get('sort') === 'oldest', fn ($query) => $query->orderBy('published_at'))
+                ->when($request->get('sort') === 'popular', fn ($query) => $query->reorder('views', 'desc'))
+                ->when($request->get('sort') === 'oldest',  fn ($query) => $query->reorder('published_at', 'asc'))
                 ->paginate(12)
                 ->withQueryString()
                 ->through(fn (Article $a) => $this->articleCardData($a));
