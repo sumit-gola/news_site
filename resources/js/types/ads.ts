@@ -31,8 +31,8 @@ export type AdvertisementRecord = {
     start_date: string | null;
     end_date: string | null;
     priority: number;
-    status: 'active' | 'inactive' | 'scheduled' | 'expired';
-    raw_status: 'active' | 'inactive';
+    status: 'draft' | 'active' | 'paused' | 'expired' | 'archived' | 'scheduled';
+    raw_status: 'draft' | 'active' | 'paused' | 'expired' | 'archived';
     workflow_status: AdWorkflowStatus | null;
     ad_slot_id: number | null;
     advertiser_id: number | null;
@@ -97,7 +97,7 @@ export type AdFormData = {
     variant_split: number;
     winner_metric: 'ctr' | 'clicks' | 'impressions';
     rotation_type: 'sequential' | 'random';
-    status: 'active' | 'inactive';
+    status: 'draft' | 'active' | 'paused' | 'expired' | 'archived';
 };
 
 export type AdOptionItem = {

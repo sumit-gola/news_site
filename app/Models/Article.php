@@ -16,6 +16,7 @@ class Article extends Model
 
     protected $appends = [
         'featured_image_url',
+        'thumbnail_url',
     ];
 
     protected $fillable = [
@@ -24,6 +25,7 @@ class Article extends Model
         'content',
         'excerpt',
         'featured_image',
+        'thumbnail',
         'user_id',
         'status',
         'approved_by',
@@ -187,6 +189,24 @@ class Article extends Model
 
         if (Str::startsWith($path, '/')) {
             return url($path);
+        }
+
+        return asset('storage/' . ltrim($path, '/'));
+    }
+
+    /**
+     * Get thumbnail URL (falls back to featured image).
+     */
+    public function getThumbnailUrlAttribute(): ?string
+    {
+        $path = trim((string) ($this->thumbnail ?? $this->featured_image));
+
+        if ($path === '') {
+            return null;
+        }
+
+        if (Str::startsWith($path, ['http://', 'https://', '//'])) {
+            return $path;
         }
 
         return asset('storage/' . ltrim($path, '/'));

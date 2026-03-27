@@ -7,6 +7,7 @@ import {
     ImagePlus,
     LayoutGrid,
     Megaphone,
+    MessageSquare,
     Newspaper,
     PanelsTopLeft,
     Settings,
@@ -49,10 +50,11 @@ const footerNavItems: NavItem[] = [
 ];
 
 export function AppSidebar() {
-    const { auth, ads } = usePage<{ auth: Auth; ads?: { activeCount?: number } }>().props;
+    const { auth, ads, comments } = usePage<{ auth: Auth; ads?: { activeCount?: number }; comments?: { pendingCount?: number } }>().props;
     const user = auth?.user;
     const roles = user?.roles?.map((r) => r.name) ?? [];
-    const activeAdsCount = ads?.activeCount ?? 0;
+    const activeAdsCount    = ads?.activeCount ?? 0;
+    const pendingCommentsCount = comments?.pendingCount ?? 0;
 
     const isAdmin    = roles.includes('admin');
     const isManager  = roles.includes('manager');
@@ -83,7 +85,7 @@ export function AppSidebar() {
             <SidebarContent>
                 <NavMain items={mainNavItems} />
 
-                {isAdmin && <AdminNav activeAdsCount={activeAdsCount} />}
+                {isAdmin && <AdminNav activeAdsCount={activeAdsCount} pendingCommentsCount={pendingCommentsCount} />}
 
                 {(isAdmin || isManager) && <ManagerNav />}
 
@@ -98,7 +100,7 @@ export function AppSidebar() {
     );
 }
 
-function AdminNav({ activeAdsCount }: { activeAdsCount: number }) {
+function AdminNav({ activeAdsCount, pendingCommentsCount }: { activeAdsCount: number; pendingCommentsCount: number }) {
     const { url } = usePage();
 
     const items = [
@@ -184,6 +186,23 @@ function AdminNav({ activeAdsCount }: { activeAdsCount: number }) {
                             </SidebarMenuSubButton>
                         </SidebarMenuSubItem>
                     </SidebarMenuSub>
+                </SidebarMenuItem>
+
+                {/* Comments */}
+                <SidebarMenuItem>
+                    <SidebarMenuButton
+                        asChild
+                        isActive={url.startsWith('/admin/comments')}
+                        tooltip={{ children: 'Comments' }}
+                    >
+                        <Link href="/admin/comments" prefetch>
+                            <MessageSquare />
+                            <span>Comments</span>
+                        </Link>
+                    </SidebarMenuButton>
+                    {pendingCommentsCount > 0 && (
+                        <SidebarMenuBadge>{pendingCommentsCount}</SidebarMenuBadge>
+                    )}
                 </SidebarMenuItem>
             </SidebarMenu>
         </SidebarGroup>

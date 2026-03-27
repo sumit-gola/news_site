@@ -146,7 +146,7 @@ class AdvertisementController extends Controller
                 'end_date' => optional($advertisement->end_date)?->format('Y-m-d\TH:i'),
                 'priority' => $advertisement->priority,
                 'rotation_type' => $advertisement->rotation_type,
-                'status' => in_array($advertisement->status, ['paused', 'archived'], true) ? 'inactive' : $advertisement->status,
+                'status' => $advertisement->status,
                 'workflow_status' => $advertisement->workflow_status ?? 'draft',
                 'is_pinned' => (bool) $advertisement->is_pinned,
                 'is_house_ad' => (bool) $advertisement->is_house_ad,
@@ -204,7 +204,7 @@ class AdvertisementController extends Controller
 
     public function toggleStatus(Advertisement $advertisement): RedirectResponse
     {
-        $next = $advertisement->status === 'active' ? 'inactive' : 'active';
+        $next = $advertisement->status === 'active' ? 'paused' : 'active';
         $advertisement->update([
             'status' => $next,
             'workflow_status' => $next === 'active' ? 'approved' : 'paused',
@@ -233,10 +233,10 @@ class AdvertisementController extends Controller
                     $ad->update(['status' => 'active', 'workflow_status' => 'approved']);
                     break;
                 case 'pause':
-                    $ad->update(['status' => 'inactive', 'workflow_status' => 'paused']);
+                    $ad->update(['status' => 'paused', 'workflow_status' => 'paused']);
                     break;
                 case 'archive':
-                    $ad->update(['status' => 'inactive', 'workflow_status' => 'archived']);
+                    $ad->update(['status' => 'archived', 'workflow_status' => 'archived']);
                     break;
                 case 'pin':
                     $ad->update(['is_pinned' => true]);
@@ -258,7 +258,7 @@ class AdvertisementController extends Controller
                     $clone = $ad->replicate();
                     $clone->title = $ad->title . ' (Copy)';
                     $clone->slug = Str::slug($clone->title . '-' . Str::random(6));
-                    $clone->status = 'inactive';
+                    $clone->status = 'draft';
                     $clone->save();
                     $this->audit($clone, 'duplicated', ['source_id' => $ad->id]);
                     break;
@@ -318,7 +318,7 @@ class AdvertisementController extends Controller
             'frequency_cap_value' => ['nullable', 'integer', 'min:1', 'max:500'],
             'priority' => ['required', 'integer', 'min:1', 'max:999'],
             'rotation_type' => ['required', Rule::in(['sequential', 'random'])],
-            'status' => ['required', Rule::in(['active', 'inactive'])],
+            'status' => ['required', Rule::in(['draft', 'active', 'paused', 'expired', 'archived'])],
             'workflow_status' => ['nullable', Rule::in(['draft', 'pending_review', 'approved', 'rejected', 'active', 'paused', 'archived'])],
             'reviewer_notes' => ['nullable', 'string'],
             'internal_comments' => ['nullable', 'string'],
@@ -417,7 +417,7 @@ class AdvertisementController extends Controller
                 'audience_tags' => $validated['audience_tags'] ?? [],
             ],
             'rotation_type' => $validated['rotation_type'],
-            'status' => $validated['status'] === 'active' ? 'active' : 'inactive',
+            'status' => $validated['status'],
             'workflow_status' => $validated['workflow_status'] ?? ($validated['status'] === 'active' ? 'approved' : 'draft'),
             'reviewer_notes' => $validated['reviewer_notes'] ?? null,
             'internal_comments' => $validated['internal_comments'] ?? null,
@@ -437,7 +437,7 @@ class AdvertisementController extends Controller
 
     private function serializeAd(Advertisement $ad): array
     {
-        $computedStatus = in_array($ad->status, ['paused', 'archived'], true) ? 'inactive' : $ad->status;
+        $computedStatus = $ad->status;
         if ($ad->status === 'active' && $ad->start_date && $ad->start_date->isFuture()) {
             $computedStatus = 'scheduled';
         }
@@ -459,7 +459,7 @@ class AdvertisementController extends Controller
             'end_date' => optional($ad->end_date)?->toDateTimeString(),
             'priority' => $ad->priority,
             'status' => $computedStatus,
-            'raw_status' => $ad->status === 'active' ? 'active' : 'inactive',
+            'raw_status' => $ad->status,
             'ctr' => $ad->ctr,
             'total_impressions' => $ad->total_impressions,
             'total_clicks' => $ad->total_clicks,

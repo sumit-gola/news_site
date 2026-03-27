@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Article;
 use App\Models\Category;
+use App\Models\Comment;
 use App\Models\Tag;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -144,11 +145,24 @@ class PublicController extends Controller
             ->limit(6)
             ->get();
 
+        $comments = Comment::approved()
+            ->topLevel()
+            ->where('article_id', $article->id)
+            ->with([
+                'user:id,name',
+                'approvedReplies.user:id,name',
+            ])
+            ->orderBy('created_at')
+            ->get()
+            ->map(fn (Comment $c) => $this->serializeComment($c, true));
+
         return Inertia::render('public/ArticleShow', [
             'article'       => $this->articleCardData($article),
             'related'       => $related->map(fn (Article $a) => $this->articleCardData($a)),
             'trending'      => $trendingSidebar->map(fn (Article $a) => $this->articleCardData($a)),
             'navCategories' => $this->navCategories(),
+            'comments'      => $comments,
+            'commentsCount' => Comment::approved()->where('article_id', $article->id)->count(),
         ]);
     }
 
@@ -373,6 +387,28 @@ class PublicController extends Controller
     private function authorSlug(User $user): string
     {
         return Str::slug($user->name) . '-' . $user->id;
+    }
+
+    private function serializeComment(Comment $comment, bool $withReplies = false): array
+    {
+        $data = [
+            'id'             => $comment->id,
+            'body'           => $comment->body,
+            'author_name'    => $comment->author_name,
+            'author_initials'=> $comment->author_initials,
+            'user_id'        => $comment->user_id,
+            'parent_id'      => $comment->parent_id,
+            'created_at'     => $comment->created_at?->toISOString(),
+        ];
+
+        if ($withReplies) {
+            $data['replies'] = $comment->approvedReplies
+                ->map(fn (Comment $r) => $this->serializeComment($r, false))
+                ->values()
+                ->toArray();
+        }
+
+        return $data;
     }
 
     private function resolveAuthorBySlug(string $slug): ?User

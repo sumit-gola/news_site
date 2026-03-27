@@ -149,7 +149,7 @@ export default function AdForm({ mode, action, advertisers, categories, slots, f
         return score;
     }, [form.data]);
 
-    const submit = (e: React.FormEvent) => {
+    const submit = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
 
         const basePayload = (data: AdFormData) => ({
@@ -509,8 +509,11 @@ export default function AdForm({ mode, action, advertisers, categories, slots, f
                                     <Select value={form.data.status} onValueChange={(v) => form.setData('status', v as AdFormData['status'])}>
                                         <SelectTrigger><SelectValue /></SelectTrigger>
                                         <SelectContent>
+                                            <SelectItem value="draft">Draft</SelectItem>
                                             <SelectItem value="active">Active</SelectItem>
-                                            <SelectItem value="inactive">Inactive</SelectItem>
+                                            <SelectItem value="paused">Paused</SelectItem>
+                                            <SelectItem value="expired">Expired</SelectItem>
+                                            <SelectItem value="archived">Archived</SelectItem>
                                         </SelectContent>
                                     </Select>
                                 </div>

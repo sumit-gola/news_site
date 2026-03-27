@@ -10,6 +10,7 @@ use App\Models\Tag;
 use App\Models\User;
 use App\Services\HtmlSanitizer;
 use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
@@ -146,7 +147,7 @@ class ArticleController extends Controller
         return Inertia::render('articles/Create', [
             'article'    => null,
             'authors'    => User::role('reporter')->get(['id', 'name', 'email']),
-            'categories' => Category::active()->with('children')->orderBy('order')->get(),
+            'categories' => Category::active()->whereNull('parent_id')->with('children.children')->orderBy('order')->get(),
             'tags'       => Tag::orderBy('name')->get(['id', 'name', 'slug']),
             'languages'  => ['en' => 'English', 'hi' => 'हिंदी'],
         ]);
@@ -163,22 +164,36 @@ class ArticleController extends Controller
         $user = $request->user();
 
         $validated = $request->validate([
-            'title'              => ['required', 'string', 'max:255'],
-            'slug'               => ['nullable', 'string', 'max:255', Rule::unique('articles', 'slug')],
-            'excerpt'            => ['required', 'string', 'max:500'],
-            'content'            => ['required', 'string'],
-            'featured_image'     => ['nullable', 'string'],
-            'meta_title'         => ['nullable', 'string', 'max:60'],
-            'meta_description'   => ['nullable', 'string', 'max:160'],
-            'meta_keywords'      => ['nullable', 'string'],
-            'og_image'           => ['nullable', 'string'],
-            'canonical_url'      => ['nullable', 'url'],
-            'published_at'       => ['nullable', 'date'],
-            'category_ids'       => ['nullable', 'array'],
-            'category_ids.*'     => ['integer', 'exists:categories,id'],
-            'tag_names'          => ['nullable', 'array'],
-            'tag_names.*'        => ['string', 'max:50'],
+            'title'                      => ['required', 'string', 'max:255'],
+            'slug'                       => ['nullable', 'string', 'max:255', Rule::unique('articles', 'slug')],
+            'excerpt'                    => ['required', 'string', 'max:500'],
+            'content'                    => ['required', 'string'],
+            'thumbnail'                  => ['nullable'],
+            'featured_image'             => ['nullable'],
+            'use_thumbnail_as_featured'  => ['nullable', 'boolean'],
+            'meta_title'                 => ['nullable', 'string', 'max:60'],
+            'meta_description'           => ['nullable', 'string', 'max:160'],
+            'meta_keywords'              => ['nullable', 'string'],
+            'og_image'                   => ['nullable', 'string'],
+            'canonical_url'              => ['nullable', 'url'],
+            'published_at'               => ['nullable', 'date'],
+            'category_ids'               => ['nullable', 'array'],
+            'category_ids.*'             => ['integer', 'exists:categories,id'],
+            'tag_names'                  => ['nullable', 'array'],
+            'tag_names.*'                => ['string', 'max:50'],
         ]);
+
+        // Store uploaded images
+        $thumbnailPath    = $this->storeImage($request->file('thumbnail'));
+        $featuredPath     = $this->storeImage($request->file('featured_image'), $validated['featured_image'] ?? null);
+        $useThumbnail     = filter_var($validated['use_thumbnail_as_featured'] ?? false, FILTER_VALIDATE_BOOLEAN);
+
+        if ($useThumbnail && $thumbnailPath) {
+            $featuredPath = $thumbnailPath;
+        }
+
+        $validated['thumbnail']      = $thumbnailPath;
+        $validated['featured_image'] = $featuredPath;
 
         // Create the article
         $article = Article::create([
@@ -233,8 +248,9 @@ class ArticleController extends Controller
         return Inertia::render('articles/Edit', [
             'article'    => $article->load(['meta', 'categories', 'tags']),
             'authors'    => User::role('reporter')->get(['id', 'name', 'email']),
-            'categories' => Category::active()->with('children')->orderBy('order')->get(),
+            'categories' => Category::active()->whereNull('parent_id')->with('children.children')->orderBy('order')->get(),
             'tags'       => Tag::orderBy('name')->get(['id', 'name', 'slug']),
+            'languages'  => ['en' => 'English', 'hi' => 'हिंदी'],
         ]);
     }
 
@@ -246,22 +262,36 @@ class ArticleController extends Controller
         $this->authorize('update', $article);
 
         $validated = $request->validate([
-            'title'              => ['required', 'string', 'max:255'],
-            'slug'               => ['nullable', 'string', 'max:255', Rule::unique('articles', 'slug')->ignore($article->id)],
-            'excerpt'            => ['required', 'string', 'max:500'],
-            'content'            => ['required', 'string'],
-            'featured_image'     => ['nullable', 'string'],
-            'meta_title'         => ['nullable', 'string', 'max:60'],
-            'meta_description'   => ['nullable', 'string', 'max:160'],
-            'meta_keywords'      => ['nullable', 'string'],
-            'og_image'           => ['nullable', 'string'],
-            'canonical_url'      => ['nullable', 'url'],
-            'published_at'       => ['nullable', 'date'],
-            'category_ids'       => ['nullable', 'array'],
-            'category_ids.*'     => ['integer', 'exists:categories,id'],
-            'tag_names'          => ['nullable', 'array'],
-            'tag_names.*'        => ['string', 'max:50'],
+            'title'                      => ['required', 'string', 'max:255'],
+            'slug'                       => ['nullable', 'string', 'max:255', Rule::unique('articles', 'slug')->ignore($article->id)],
+            'excerpt'                    => ['required', 'string', 'max:500'],
+            'content'                    => ['required', 'string'],
+            'thumbnail'                  => ['nullable'],
+            'featured_image'             => ['nullable'],
+            'use_thumbnail_as_featured'  => ['nullable', 'boolean'],
+            'meta_title'                 => ['nullable', 'string', 'max:60'],
+            'meta_description'           => ['nullable', 'string', 'max:160'],
+            'meta_keywords'              => ['nullable', 'string'],
+            'og_image'                   => ['nullable', 'string'],
+            'canonical_url'              => ['nullable', 'url'],
+            'published_at'               => ['nullable', 'date'],
+            'category_ids'               => ['nullable', 'array'],
+            'category_ids.*'             => ['integer', 'exists:categories,id'],
+            'tag_names'                  => ['nullable', 'array'],
+            'tag_names.*'                => ['string', 'max:50'],
         ]);
+
+        // Store uploaded images (preserve existing if no new file uploaded)
+        $thumbnailPath = $this->storeImage($request->file('thumbnail'), $validated['thumbnail'] ?? $article->thumbnail);
+        $featuredPath  = $this->storeImage($request->file('featured_image'), $validated['featured_image'] ?? $article->featured_image);
+        $useThumbnail  = filter_var($validated['use_thumbnail_as_featured'] ?? false, FILTER_VALIDATE_BOOLEAN);
+
+        if ($useThumbnail && $thumbnailPath) {
+            $featuredPath = $thumbnailPath;
+        }
+
+        $validated['thumbnail']      = $thumbnailPath;
+        $validated['featured_image'] = $featuredPath;
 
         // Update article
         $article->update($this->buildArticlePayload($validated, $article));
@@ -396,9 +426,28 @@ class ArticleController extends Controller
             'slug'           => $this->resolveSlug($validated, $article),
             'excerpt'        => trim($validated['excerpt']),
             'content'        => HtmlSanitizer::clean($validated['content']),
+            'thumbnail'      => $this->normalizeOptionalValue($validated['thumbnail'] ?? null),
             'featured_image' => $this->normalizeOptionalValue($validated['featured_image'] ?? null),
             'published_at'   => $validated['published_at'] ?? null,
         ];
+    }
+
+    /**
+     * Store an uploaded image file and return its storage path.
+     * If a string URL is provided instead of a file, return it as-is.
+     * Returns null when neither is present.
+     */
+    private function storeImage(?UploadedFile $file, mixed $fallbackUrl = null): ?string
+    {
+        if ($file instanceof UploadedFile && $file->isValid()) {
+            return $file->store('articles', 'public');
+        }
+
+        if (is_string($fallbackUrl) && $fallbackUrl !== '') {
+            return $fallbackUrl;
+        }
+
+        return null;
     }
 
     /**

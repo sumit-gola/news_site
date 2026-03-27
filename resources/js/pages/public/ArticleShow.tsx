@@ -1,7 +1,8 @@
 import { Head, Link, usePage } from '@inertiajs/react';
-import { Clock, Eye, Calendar, User, Tag, Share2, Facebook, Twitter, Link2, ArrowLeft } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { Clock, Eye, Calendar, User, Tag, Share2, Link2, ArrowLeft } from 'lucide-react';
+import { useState } from 'react';
 import AdSlot from '@/components/ads/AdSlot';
+import CommentSection, { type CommentItem } from '@/components/comments/CommentSection';
 import PublicLayout from '@/layouts/public-layout';
 import type { Article, Category } from '@/types';
 
@@ -9,6 +10,8 @@ interface Props {
     article: Article;
     related: Article[];
     trending: Article[];
+    comments: CommentItem[];
+    commentsCount: number;
 }
 
 function timeAgo(date: string) {
@@ -81,7 +84,9 @@ function ShareButtons({ title, url }: { title: string; url: string }) {
                 rel="noopener noreferrer"
                 className="flex size-8 items-center justify-center rounded-full bg-[#1877f2] text-white transition hover:opacity-80"
             >
-                <Facebook className="size-4" />
+                <svg className="size-4 fill-current" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M22 12a10 10 0 1 0-11.563 9.875v-6.988H7.9V12h2.537V9.797c0-2.506 1.493-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.887h-2.33V21.875A10.005 10.005 0 0 0 22 12z" />
+                </svg>
             </a>
             <a
                 href={twUrl}
@@ -89,7 +94,9 @@ function ShareButtons({ title, url }: { title: string; url: string }) {
                 rel="noopener noreferrer"
                 className="flex size-8 items-center justify-center rounded-full bg-[#1da1f2] text-white transition hover:opacity-80"
             >
-                <Twitter className="size-4" />
+                <svg className="size-4 fill-current" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.744l7.737-8.835L1.254 2.25H8.08l4.253 5.622 5.912-5.622Zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+                </svg>
             </a>
             <button
                 onClick={copyLink}
@@ -103,7 +110,7 @@ function ShareButtons({ title, url }: { title: string; url: string }) {
     );
 }
 
-export default function ArticleShow({ article, related, trending }: Props) {
+export default function ArticleShow({ article, related, trending, comments, commentsCount }: Props) {
     const { navCategories } = usePage<{ navCategories: Category[] }>().props;
     const pageUrl   = typeof window !== 'undefined' ? window.location.href : '';
     const readTime  = article.meta?.read_time ?? Math.max(1, Math.ceil(article.content.split(' ').length / 200));
@@ -149,13 +156,6 @@ export default function ArticleShow({ article, related, trending }: Props) {
                 ) : undefined}
             </Head>
 
-            {/* Hero Image */}
-            {article.featured_image_url && (
-                <div className="h-72 w-full overflow-hidden bg-gray-200 dark:bg-gray-800 md:h-96">
-                    <img src={article.featured_image_url} alt={article.title} className="size-full object-cover" />
-                </div>
-            )}
-
             <div className="mx-auto max-w-7xl px-4 py-8">
                 <div className="grid gap-10 lg:grid-cols-3">
                     {/* ── Main content ────────────────────────────────────── */}
@@ -179,6 +179,17 @@ export default function ArticleShow({ article, related, trending }: Props) {
                                 {article.categories.map((cat) => (
                                     <CategoryBadge key={cat.id} category={cat} />
                                 ))}
+                            </div>
+                        )}
+
+                        {/* Featured Image — above heading */}
+                        {article.featured_image_url && (
+                            <div className="mb-5 overflow-hidden rounded-xl">
+                                <img
+                                    src={article.featured_image_url}
+                                    alt={article.title}
+                                    className="w-full object-cover"
+                                />
                             </div>
                         )}
 
@@ -282,6 +293,13 @@ export default function ArticleShow({ article, related, trending }: Props) {
                             <ArrowLeft className="size-4" />
                             Back to Home
                         </Link>
+
+                        {/* Comments */}
+                        <CommentSection
+                            articleSlug={article.slug}
+                            comments={comments}
+                            commentsCount={commentsCount}
+                        />
                     </article>
 
                     {/* ── Sidebar ──────────────────────────────────────────── */}

@@ -145,6 +145,9 @@ export type Article = {
     user_id: number;
     author?: User;
     author_slug?: string | null;
+    language?: string | null;
+    thumbnail?: string | null;
+    thumbnail_url?: string | null;
     featured_image: string | null;
     featured_image_url?: string | null;
     status: 'draft' | 'pending' | 'published' | 'rejected';

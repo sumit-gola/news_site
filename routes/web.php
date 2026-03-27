@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\CommentController as AdminCommentController;
 use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\AdAnalyticsController;
@@ -40,6 +41,14 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'verified', 'role:ad
     // Admin publishing shortcut
     Route::get('articles', [ArticleController::class, 'adminIndex'])->name('articles.index');
     Route::post('articles/{article}/publish', [ArticleController::class, 'publish'])->name('articles.publish');
+
+    // Comment Management
+    Route::get('comments', [AdminCommentController::class, 'index'])->name('comments.index');
+    Route::patch('comments/bulk-action', [AdminCommentController::class, 'bulkAction'])->name('comments.bulk-action');
+    Route::patch('comments/{comment}/approve', [AdminCommentController::class, 'approve'])->name('comments.approve');
+    Route::patch('comments/{comment}/reject', [AdminCommentController::class, 'reject'])->name('comments.reject');
+    Route::patch('comments/{comment}/spam', [AdminCommentController::class, 'spam'])->name('comments.spam');
+    Route::delete('comments/{comment}', [AdminCommentController::class, 'destroy'])->name('comments.destroy');
 
     // Advertisement Management
     Route::get('advertisements/analytics', [AdAnalyticsController::class, 'index'])->name('advertisements.analytics');

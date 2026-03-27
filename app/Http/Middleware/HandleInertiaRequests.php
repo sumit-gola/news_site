@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use App\Models\Advertisement;
 use App\Models\Category;
+use App\Models\Comment;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Schema;
@@ -58,6 +59,9 @@ class HandleInertiaRequests extends Middleware
             'ads' => [
                 'activeCount' => fn () => $this->activeAdCount(),
             ],
+            'comments' => [
+                'pendingCount' => fn () => $this->pendingCommentCount(),
+            ],
             'navCategories' => fn () => $this->navCategories(),
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
         ];
@@ -70,6 +74,15 @@ class HandleInertiaRequests extends Middleware
         }
 
         return Advertisement::query()->active()->count();
+    }
+
+    private function pendingCommentCount(): int
+    {
+        if (!Schema::hasTable('comments')) {
+            return 0;
+        }
+
+        return Comment::pending()->count();
     }
 
     private function navCategories(): mixed

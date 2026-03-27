@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\CommentController;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\PublicController;
 use Illuminate\Support\Facades\Route;
@@ -13,6 +14,10 @@ Route::get('/category/{category:slug}', [PublicController::class, 'category'])->
 Route::get('/tag/{tag:slug}', [PublicController::class, 'tag'])->name('public.tag.show');
 Route::get('/author/{authorSlug}', [PublicController::class, 'author'])->name('public.author.show');
 Route::get('/search', [PublicController::class, 'search'])->name('public.search');
+
+// ── Comments ──────────────────────────────────────────────────────────────────
+Route::post('/news/{article:slug}/comments', [CommentController::class, 'store'])->name('comments.store');
+Route::delete('/comments/{comment}', [CommentController::class, 'destroy'])->middleware(['auth'])->name('comments.destroy');
 
 // ── CMS Dynamic Pages ─────────────────────────────────────────────────────────
 Route::get('/page/{page:slug}', [PageController::class, 'showPublic'])->name('public.page.show');
