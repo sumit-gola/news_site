@@ -43,11 +43,15 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'verified', 'role:ad
     Route::post('articles/{article}/publish', [ArticleController::class, 'publish'])->name('articles.publish');
 
     // Comment Management
+    Route::get('comments/dashboard', [AdminCommentController::class, 'dashboard'])->name('comments.dashboard');
     Route::get('comments', [AdminCommentController::class, 'index'])->name('comments.index');
     Route::patch('comments/bulk-action', [AdminCommentController::class, 'bulkAction'])->name('comments.bulk-action');
+    Route::put('comments/{comment}', [AdminCommentController::class, 'update'])->name('comments.update');
     Route::patch('comments/{comment}/approve', [AdminCommentController::class, 'approve'])->name('comments.approve');
     Route::patch('comments/{comment}/reject', [AdminCommentController::class, 'reject'])->name('comments.reject');
     Route::patch('comments/{comment}/spam', [AdminCommentController::class, 'spam'])->name('comments.spam');
+    Route::patch('comments/{comment}/restore', [AdminCommentController::class, 'restore'])->name('comments.restore');
+    Route::delete('comments/{comment}/force', [AdminCommentController::class, 'forceDestroy'])->name('comments.force-destroy');
     Route::delete('comments/{comment}', [AdminCommentController::class, 'destroy'])->name('comments.destroy');
 
     // Advertisement Management

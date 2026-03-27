@@ -5,13 +5,16 @@ import {
     FileText,
     FolderGit2,
     ImagePlus,
+    LayoutDashboard,
     LayoutGrid,
+    List,
     Megaphone,
     MessageSquare,
     Newspaper,
     PanelsTopLeft,
     Settings,
     Shield,
+    Trash2,
     Users,
 } from 'lucide-react';
 import AppLogo from '@/components/app-logo';
@@ -191,18 +194,41 @@ function AdminNav({ activeAdsCount, pendingCommentsCount }: { activeAdsCount: nu
                 {/* Comments */}
                 <SidebarMenuItem>
                     <SidebarMenuButton
-                        asChild
                         isActive={url.startsWith('/admin/comments')}
                         tooltip={{ children: 'Comments' }}
                     >
-                        <Link href="/admin/comments" prefetch>
-                            <MessageSquare />
-                            <span>Comments</span>
-                        </Link>
+                        <MessageSquare />
+                        <span>Comments</span>
                     </SidebarMenuButton>
                     {pendingCommentsCount > 0 && (
                         <SidebarMenuBadge>{pendingCommentsCount}</SidebarMenuBadge>
                     )}
+                    <SidebarMenuSub>
+                        <SidebarMenuSubItem>
+                            <SidebarMenuSubButton asChild isActive={url === '/admin/comments/dashboard'}>
+                                <Link href="/admin/comments/dashboard" prefetch>
+                                    <LayoutDashboard />
+                                    <span>Dashboard</span>
+                                </Link>
+                            </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                        <SidebarMenuSubItem>
+                            <SidebarMenuSubButton asChild isActive={url === '/admin/comments' && !url.includes('trashed')}>
+                                <Link href="/admin/comments" prefetch>
+                                    <List />
+                                    <span>All Comments</span>
+                                </Link>
+                            </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                        <SidebarMenuSubItem>
+                            <SidebarMenuSubButton asChild isActive={url.includes('trashed=true')}>
+                                <Link href="/admin/comments?trashed=true" prefetch>
+                                    <Trash2 />
+                                    <span>Trash</span>
+                                </Link>
+                            </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                    </SidebarMenuSub>
                 </SidebarMenuItem>
             </SidebarMenu>
         </SidebarGroup>

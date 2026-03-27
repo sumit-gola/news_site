@@ -6,6 +6,7 @@ use App\Models\ActivityLog;
 use App\Models\Article;
 use App\Models\ArticleMeta;
 use App\Models\Category;
+use App\Models\Comment;
 use App\Models\Tag;
 use App\Models\User;
 use App\Services\HtmlSanitizer;
@@ -228,13 +229,32 @@ class ArticleController extends Controller
     {
         $this->authorize('view', $article);
 
-        // Increment view count for published articles
         if ($article->isPublished()) {
             $article->increment('views');
         }
 
+        $comments = Comment::withTrashed()
+            ->where('article_id', $article->id)
+            ->with(['user:id,name', 'parent:id,body,guest_name,user_id'])
+            ->orderBy('created_at')
+            ->get()
+            ->map(fn (Comment $c) => [
+                'id'              => $c->id,
+                'body'            => $c->body,
+                'status'          => $c->status,
+                'author_name'     => $c->author_name,
+                'author_initials' => $c->author_initials,
+                'guest_email'     => $c->guest_email,
+                'parent_id'       => $c->parent_id,
+                'parent_body'     => $c->parent ? Str::limit($c->parent->body, 50) : null,
+                'user'            => $c->user ? ['id' => $c->user->id, 'name' => $c->user->name] : null,
+                'created_at'      => $c->created_at?->toISOString(),
+                'deleted_at'      => $c->deleted_at?->toISOString(),
+            ]);
+
         return Inertia::render('articles/Show', [
-            'article' => $article->load(['author', 'meta', 'categories', 'tags', 'approvedBy']),
+            'article'  => $article->load(['author', 'meta', 'categories', 'tags', 'approvedBy']),
+            'comments' => $comments,
         ]);
     }
 
