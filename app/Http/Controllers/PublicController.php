@@ -185,16 +185,36 @@ class PublicController extends Controller
 
         $category->load(['parent:id,name,slug', 'children' => fn ($q) => $q->where('is_active', true)->orderBy('order')]);
 
+        // Trending articles in this category (sidebar)
+        $trending = Article::published()
+            ->with(['author:id,name', 'categories:id,name,color,slug'])
+            ->whereHas('categories', fn ($q) => $q->where('categories.id', $category->id))
+            ->orderByDesc('views')
+            ->limit(6)
+            ->get()
+            ->map(fn (Article $a) => $this->articleCardData($a));
+
+        // Other active root categories (sidebar)
+        $otherCategories = Category::active()
+            ->whereNull('parent_id')
+            ->where('id', '!=', $category->id)
+            ->withCount(['articles' => fn ($q) => $q->where('status', 'published')])
+            ->orderByDesc('articles_count')
+            ->limit(10)
+            ->get(['id', 'name', 'slug', 'color', 'icon']);
+
         return Inertia::render('public/Category', [
-            'category'      => $category,
-            'articles'      => $articles,
-            'filters'       => $request->only(['sort', 'tag']),
-            'tags'          => Tag::query()
+            'category'        => $category,
+            'articles'        => $articles,
+            'filters'         => $request->only(['sort', 'tag']),
+            'tags'            => Tag::query()
                 ->whereHas('articles', fn ($q) => $q->whereHas('categories', fn ($cq) => $cq->where('categories.id', $category->id)))
                 ->orderBy('name')
                 ->limit(30)
                 ->get(['id', 'name', 'slug']),
-            'navCategories' => $this->navCategories(),
+            'trending'        => $trending,
+            'otherCategories' => $otherCategories,
+            'navCategories'   => $this->navCategories(),
         ]);
     }
 
