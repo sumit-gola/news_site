@@ -12,13 +12,106 @@ use App\Http\Controllers\ArticleController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\EditorImageController;
 use App\Http\Controllers\PageController;
+use App\Models\ActivityLog;
+use App\Models\Advertisement;
 use App\Models\Article;
 use App\Models\Category;
+use App\Models\Comment;
+use App\Models\Tag;
+use App\Models\User;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::inertia('dashboard', 'dashboard')->name('dashboard');
+    Route::get('dashboard', function () {
+        // Article stats
+        $totalArticles     = Article::count();
+        $publishedArticles = Article::where('status', 'published')->count();
+        $pendingArticles   = Article::where('status', 'pending')->count();
+        $draftArticles     = Article::where('status', 'draft')->count();
+        $rejectedArticles  = Article::where('status', 'rejected')->count();
+
+        // User stats
+        $totalUsers  = User::count();
+        $activeUsers = User::where('status', 'active')->count();
+
+        // Comment stats
+        $totalComments   = Comment::count();
+        $pendingComments = Comment::where('status', 'pending')->count();
+
+        // Category & Tag stats
+        $totalCategories  = Category::count();
+        $activeCategories = Category::where('is_active', true)->count();
+        $totalTags        = Tag::count();
+
+        // Ad stats
+        $activeAds = Advertisement::where('status', 'active')->count();
+        $totalAds  = Advertisement::count();
+
+        // Recent articles (last 8)
+        $recentArticles = Article::with(['author:id,name', 'categories:id,name'])
+            ->latest()
+            ->take(8)
+            ->get(['id', 'title', 'slug', 'status', 'user_id', 'published_at', 'created_at']);
+
+        // Pending articles for review (last 5)
+        $pendingReview = Article::with(['author:id,name'])
+            ->where('status', 'pending')
+            ->latest()
+            ->take(5)
+            ->get(['id', 'title', 'slug', 'user_id', 'created_at']);
+
+        // Recent comments (last 5 pending)
+        $recentComments = Comment::with(['article:id,title,slug', 'user:id,name'])
+            ->where('status', 'pending')
+            ->latest()
+            ->take(5)
+            ->get(['id', 'body', 'status', 'guest_name', 'user_id', 'article_id', 'created_at']);
+
+        // Top categories by article count
+        $topCategories = Category::withCount(['articles' => fn ($q) => $q->where('status', 'published')])
+            ->orderByDesc('articles_count')
+            ->take(5)
+            ->get(['id', 'name', 'slug', 'color']);
+
+        // Recent activity
+        $recentActivity = ActivityLog::with('user:id,name')
+            ->latest()
+            ->take(8)
+            ->get(['id', 'user_id', 'action', 'description', 'created_at']);
+
+        return Inertia::render('dashboard', [
+            'stats' => [
+                'articles' => [
+                    'total'     => $totalArticles,
+                    'published' => $publishedArticles,
+                    'pending'   => $pendingArticles,
+                    'draft'     => $draftArticles,
+                    'rejected'  => $rejectedArticles,
+                ],
+                'users' => [
+                    'total'  => $totalUsers,
+                    'active' => $activeUsers,
+                ],
+                'comments' => [
+                    'total'   => $totalComments,
+                    'pending' => $pendingComments,
+                ],
+                'categories' => [
+                    'total'  => $totalCategories,
+                    'active' => $activeCategories,
+                ],
+                'tags'       => $totalTags,
+                'active_ads' => $activeAds,
+                'total_ads'  => $totalAds,
+            ],
+            'recentArticles' => $recentArticles,
+            'pendingReview'  => $pendingReview,
+            'recentComments' => $recentComments,
+            'topCategories'  => $topCategories,
+            'recentActivity' => $recentActivity,
+        ]);
+    })->name('dashboard');
 });
 
 // ── Admin Routes ──────────────────────────────────────────────────────────────
