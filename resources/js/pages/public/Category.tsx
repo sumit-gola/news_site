@@ -1,6 +1,5 @@
 import { Head, Link, router } from '@inertiajs/react';
-import { Clock, Eye, ChevronLeft, ChevronRight, TrendingUp, Flame, Tag as TagIcon, ArrowRight, LayoutGrid, List, BookOpen, User } from 'lucide-react';
-import { useState } from 'react';
+import { Clock, Eye, ChevronLeft, ChevronRight, TrendingUp, Flame, Tag as TagIcon, ArrowRight, BookOpen } from 'lucide-react';
 import AdSlot from '@/components/ads/AdSlot';
 import PublicLayout from '@/layouts/public-layout';
 import type { Article, Category, Paginated, Tag } from '@/types';
@@ -11,7 +10,6 @@ interface OtherCategory {
     color: string; icon: string | null;
     articles_count: number;
 }
-
 interface Props {
     category: Category & { parent?: Category | null; children?: Category[] };
     articles: Paginated<Article>;
@@ -30,120 +28,32 @@ function fmt(date: string) {
     return new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
-/* ─── Article cards ─────────────────────────────────── */
-
-/** Hero card — large, first article */
-function HeroCard({ article, accentColor }: { article: Article; accentColor: string }) {
+/* ─── Rich list card (main articles) ────────────────── */
+function ArticleRow({ article, accentColor }: { article: Article; accentColor: string }) {
     const cat = article.categories?.[0];
-    return (
-        <Link href={`/news/${article.slug}`} className="group relative block overflow-hidden rounded-2xl bg-gray-900">
-            {article.featured_image_url ? (
-                <img src={article.featured_image_url} alt={article.title}
-                    className="h-72 w-full object-cover opacity-80 transition duration-500 group-hover:scale-105 group-hover:opacity-70" />
-            ) : (
-                <div className="flex h-72 items-center justify-center" style={{ background: `${accentColor}30` }}>
-                    <span className="text-6xl font-black opacity-20">{article.title[0]}</span>
-                </div>
-            )}
-            {/* gradient overlay */}
-            <div className="absolute inset-0 bg-gradient-to-t from-gray-900/90 via-gray-900/30 to-transparent" />
-            <div className="absolute bottom-0 left-0 right-0 p-5">
-                {cat && (
-                    <span className="mb-2 inline-block rounded-full px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wide text-white"
-                        style={{ backgroundColor: accentColor }}>
-                        {cat.name}
-                    </span>
-                )}
-                <h2 className="line-clamp-2 text-lg font-black leading-snug text-white transition group-hover:text-white/90">
-                    {article.title}
-                </h2>
-                {article.excerpt && (
-                    <p className="mt-1.5 line-clamp-2 text-xs text-gray-300">{article.excerpt}</p>
-                )}
-                <div className="mt-2.5 flex items-center gap-3 text-[11px] text-gray-400">
-                    {article.author && <span className="font-medium text-gray-300">{article.author.name}</span>}
-                    {article.published_at && <span>{fmt(article.published_at)}</span>}
-                    <span className="flex items-center gap-1"><Eye className="size-3" />{article.views.toLocaleString()}</span>
-                </div>
-            </div>
-        </Link>
-    );
-}
-
-/** Grid card — image top, content below */
-function GridCard({ article, accentColor }: { article: Article; accentColor: string }) {
-    const cat = article.categories?.[0];
-    return (
-        <Link href={`/news/${article.slug}`}
-            className="group flex flex-col overflow-hidden rounded-xl border border-gray-100 bg-white shadow-sm transition hover:shadow-md dark:border-gray-800 dark:bg-gray-900">
-            {article.featured_image_url ? (
-                <div className="relative overflow-hidden">
-                    <img src={article.featured_image_url} alt={article.title}
-                        className="h-40 w-full object-cover transition duration-300 group-hover:scale-105" />
-                    {cat && (
-                        <span className="absolute left-2 top-2 rounded-full px-2 py-0.5 text-[10px] font-bold text-white"
-                            style={{ backgroundColor: accentColor }}>{cat.name}</span>
-                    )}
-                </div>
-            ) : (
-                <div className="relative flex h-40 items-center justify-center" style={{ background: `${accentColor}15` }}>
-                    <span className="text-4xl font-black" style={{ color: `${accentColor}40` }}>{article.title[0]}</span>
-                    {cat && (
-                        <span className="absolute left-2 top-2 rounded-full px-2 py-0.5 text-[10px] font-bold text-white"
-                            style={{ backgroundColor: accentColor }}>{cat.name}</span>
-                    )}
-                </div>
-            )}
-            <div className="flex flex-1 flex-col p-3">
-                <h3 className="line-clamp-2 text-[13px] font-bold leading-snug transition group-hover:text-red-600 dark:group-hover:text-red-400">
-                    {article.title}
-                </h3>
-                <div className="mt-auto flex items-center gap-2 pt-2 text-[10px] text-gray-400">
-                    {article.author && <span>{article.author.name}</span>}
-                    {article.published_at && <><span>·</span><span>{fmt(article.published_at)}</span></>}
-                    <span className="ml-auto flex items-center gap-0.5"><Eye className="size-3" />{article.views.toLocaleString()}</span>
-                </div>
-            </div>
-        </Link>
-    );
-}
-
-/** List card — rich horizontal card with full article info */
-function ListCard({ article, accentColor, rank }: { article: Article; accentColor: string; rank?: number }) {
-    const cat = article.categories?.[0];
+    const readTime = article.meta?.read_time;
     const isNew = article.published_at
         ? (Date.now() - new Date(article.published_at).getTime()) < 86400000 * 2
         : false;
-    const readTime = article.meta?.read_time;
     const authorInitials = article.author?.name
         ? article.author.name.split(' ').slice(0, 2).map((n: string) => n[0]).join('').toUpperCase()
         : '?';
 
     return (
         <Link href={`/news/${article.slug}`}
-            className="group relative flex gap-0 overflow-hidden rounded-xl border border-gray-100 bg-white shadow-sm transition hover:shadow-md hover:border-gray-200 dark:border-gray-800 dark:bg-gray-900 dark:hover:border-gray-700">
+            className="group relative flex gap-0 overflow-hidden rounded-xl border border-gray-100 bg-white shadow-sm transition hover:border-gray-200 hover:shadow-md dark:border-gray-800 dark:bg-gray-900 dark:hover:border-gray-700">
 
-            {/* left accent bar on hover */}
+            {/* left accent bar — slides in on hover */}
             <div className="absolute inset-y-0 left-0 w-0.5 rounded-l-xl opacity-0 transition-opacity duration-200 group-hover:opacity-100"
                 style={{ backgroundColor: accentColor }} />
 
-            {/* rank badge */}
-            {rank !== undefined && (
-                <div className="flex w-9 shrink-0 flex-col items-center justify-start pt-4">
-                    <span className={`flex size-6 items-center justify-center rounded-full text-[11px] font-black text-white`}
-                        style={{ backgroundColor: rank <= 3 ? accentColor : '#9ca3af' }}>
-                        {rank}
-                    </span>
-                </div>
-            )}
-
             {/* thumbnail */}
-            <div className={`shrink-0 ${rank !== undefined ? 'ml-0' : 'ml-3'} my-3`}>
+            <div className="my-3 ml-3 shrink-0">
                 {article.featured_image_url ? (
                     <img src={article.featured_image_url} alt={article.title}
-                        className="h-[88px] w-28 rounded-lg object-cover transition duration-300 group-hover:brightness-95" />
+                        className="h-[90px] w-32 rounded-lg object-cover transition duration-300 group-hover:brightness-95" />
                 ) : (
-                    <div className="flex h-[88px] w-28 items-center justify-center rounded-lg text-3xl font-black"
+                    <div className="flex h-[90px] w-32 items-center justify-center rounded-lg text-3xl font-black"
                         style={{ background: `${accentColor}15`, color: `${accentColor}50` }}>
                         {article.title[0]}
                     </div>
@@ -153,30 +63,30 @@ function ListCard({ article, accentColor, rank }: { article: Article; accentColo
             {/* content */}
             <div className="flex min-w-0 flex-1 flex-col justify-between gap-1 py-3 pl-3 pr-4">
 
-                {/* top: category + new badge */}
-                <div className="flex items-center gap-1.5">
+                {/* badges row */}
+                <div className="flex flex-wrap items-center gap-1.5">
                     {cat && (
-                        <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white"
+                        <span className="inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-bold text-white"
                             style={{ backgroundColor: cat.color ?? accentColor }}>
                             {cat.name}
                         </span>
                     )}
                     {isNew && (
-                        <span className="inline-flex items-center gap-0.5 rounded-full bg-red-500 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">
+                        <span className="inline-flex rounded bg-red-500 px-1.5 py-0.5 text-[10px] font-bold text-white">
                             New
                         </span>
                     )}
                     {article.views > 3000 && (
-                        <span className="inline-flex items-center gap-0.5 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
+                        <span className="inline-flex items-center gap-0.5 rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
                             <TrendingUp className="size-2.5" /> Hot
                         </span>
                     )}
                 </div>
 
                 {/* title */}
-                <h4 className="line-clamp-2 text-[13px] font-bold leading-snug text-gray-900 transition group-hover:text-red-600 dark:text-gray-100 dark:group-hover:text-red-400">
+                <h3 className="line-clamp-2 text-[14px] font-bold leading-snug text-gray-900 transition group-hover:text-red-600 dark:text-gray-100 dark:group-hover:text-red-400">
                     {article.title}
-                </h4>
+                </h3>
 
                 {/* excerpt */}
                 {article.excerpt && (
@@ -185,9 +95,8 @@ function ListCard({ article, accentColor, rank }: { article: Article; accentColo
                     </p>
                 )}
 
-                {/* bottom meta */}
-                <div className="flex items-center gap-2.5 text-[10px] text-gray-400">
-                    {/* author */}
+                {/* meta row */}
+                <div className="flex items-center gap-2 text-[10px] text-gray-400">
                     {article.author && (
                         <div className="flex items-center gap-1">
                             <span className="flex size-4 items-center justify-center rounded-full text-[8px] font-bold text-white"
@@ -197,30 +106,23 @@ function ListCard({ article, accentColor, rank }: { article: Article; accentColo
                             <span className="font-medium text-gray-600 dark:text-gray-300">{article.author.name}</span>
                         </div>
                     )}
-
-                    {article.author && article.published_at && <span className="text-gray-300 dark:text-gray-600">·</span>}
-
-                    {/* date */}
                     {article.published_at && (
-                        <span className="flex items-center gap-0.5">
-                            <Clock className="size-2.5" />
-                            {fmt(article.published_at)}
-                        </span>
-                    )}
-
-                    {/* read time */}
-                    {readTime && (
                         <>
-                            <span className="text-gray-300 dark:text-gray-600">·</span>
+                            <span className="text-gray-300 dark:text-gray-700">·</span>
                             <span className="flex items-center gap-0.5">
-                                <BookOpen className="size-2.5" />
-                                {readTime} min read
+                                <Clock className="size-2.5" />{fmt(article.published_at)}
                             </span>
                         </>
                     )}
-
-                    {/* views */}
-                    <span className="ml-auto flex items-center gap-0.5 font-medium">
+                    {readTime && (
+                        <>
+                            <span className="text-gray-300 dark:text-gray-700">·</span>
+                            <span className="flex items-center gap-0.5">
+                                <BookOpen className="size-2.5" />{readTime} min
+                            </span>
+                        </>
+                    )}
+                    <span className="ml-auto flex items-center gap-0.5 font-semibold">
                         <Eye className="size-2.5" />
                         {article.views >= 1000
                             ? `${(article.views / 1000).toFixed(1)}k`
@@ -232,7 +134,74 @@ function ListCard({ article, accentColor, rank }: { article: Article; accentColo
     );
 }
 
-/* ─── Pagination ────────────────────────────────────── */
+/* ─── Trending sidebar — Home LatestSidebar style ───── */
+function TrendingSidebar({ articles, accentColor }: { articles: Article[]; accentColor: string }) {
+    if (!articles.length) return null;
+    return (
+        <div className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900">
+            {/* header */}
+            <div className="flex items-center gap-2 border-b border-gray-100 px-4 py-3 dark:border-gray-800">
+                <Flame className="size-4" style={{ color: accentColor }} />
+                <h2 className="text-sm font-black uppercase tracking-wider">Trending</h2>
+            </div>
+            {/* items */}
+            <div className="divide-y divide-gray-100 dark:divide-gray-800">
+                {articles.map((a, i) => {
+                    const cat = a.categories?.[0];
+                    return (
+                        <Link key={a.id} href={`/news/${a.slug}`}
+                            className="group flex items-start gap-3 p-4 transition hover:bg-gray-50 dark:hover:bg-gray-800/60">
+                            {/* big rank number */}
+                            <span className="mt-0.5 w-7 shrink-0 text-xl font-black text-gray-200 dark:text-gray-700">
+                                {String(i + 1).padStart(2, '0')}
+                            </span>
+                            <div className="min-w-0 flex-1">
+                                {/* category badge */}
+                                {cat && (
+                                    <span className="inline-block rounded px-1.5 py-0.5 text-[10px] font-semibold text-white"
+                                        style={{ backgroundColor: cat.color ?? accentColor }}>
+                                        {cat.name}
+                                    </span>
+                                )}
+                                {/* title */}
+                                <p className="mt-1 line-clamp-2 text-sm font-semibold leading-snug transition group-hover:text-red-600 dark:group-hover:text-red-400">
+                                    {a.title}
+                                </p>
+                                {/* meta */}
+                                <div className="mt-1.5 flex items-center gap-2 text-[11px] text-gray-400">
+                                    {a.published_at && (
+                                        <span className="flex items-center gap-0.5">
+                                            <Clock className="size-2.5" />{fmt(a.published_at)}
+                                        </span>
+                                    )}
+                                    <span className="flex items-center gap-0.5">
+                                        <Eye className="size-2.5" />
+                                        {a.views >= 1000 ? `${(a.views / 1000).toFixed(1)}k` : a.views.toLocaleString()}
+                                    </span>
+                                </div>
+                            </div>
+                        </Link>
+                    );
+                })}
+            </div>
+        </div>
+    );
+}
+
+/* ─── Section label ─────────────────────────────────── */
+function SectionLabel({ icon: Icon, title, color }: { icon: React.ElementType; title: string; color?: string }) {
+    return (
+        <div className="mb-3 flex items-center gap-2">
+            <span className="rounded-md p-1" style={{ backgroundColor: `${color ?? '#ef4444'}18` }}>
+                <Icon className="size-3.5" style={{ color: color ?? '#ef4444' }} />
+            </span>
+            <span className="text-[12px] font-black uppercase tracking-widest" style={{ color: color ?? '#ef4444' }}>{title}</span>
+            <div className="flex-1 border-t border-dashed border-gray-200 dark:border-gray-700" />
+        </div>
+    );
+}
+
+/* ─── Pagination ─────────────────────────────────────── */
 function Pagination({ data }: { data: Paginated<Article> }) {
     if (data.last_page <= 1) return null;
     return (
@@ -259,25 +228,11 @@ function Pagination({ data }: { data: Paginated<Article> }) {
     );
 }
 
-/* ─── Section label ─────────────────────────────────── */
-function SectionLabel({ icon: Icon, title, color }: { icon: React.ElementType; title: string; color?: string }) {
-    return (
-        <div className="mb-3 flex items-center gap-2">
-            <span className="rounded-md p-1" style={{ backgroundColor: `${color ?? '#ef4444'}18` }}>
-                <Icon className="size-3.5" style={{ color: color ?? '#ef4444' }} />
-            </span>
-            <span className="text-[12px] font-black uppercase tracking-widest" style={{ color: color ?? '#ef4444' }}>{title}</span>
-            <div className="flex-1 border-t border-dashed border-gray-200 dark:border-gray-700" />
-        </div>
-    );
-}
-
-/* ─── Main page ─────────────────────────────────────── */
+/* ─── Main page ──────────────────────────────────────── */
 export default function CategoryPage({ category, articles, tags = [], filters = {}, trending = [], otherCategories = [] }: Props) {
     const accent = category.color ?? '#ef4444';
     const selectedSort = (typeof filters.sort === 'string' && filters.sort) ? filters.sort : 'latest';
     const selectedTag  = typeof filters.tag === 'string' ? filters.tag : '';
-    const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
     const updateFilters = (next: { sort?: string; tag?: string }) => {
         const payload: Record<string, string> = {};
@@ -287,15 +242,13 @@ export default function CategoryPage({ category, articles, tags = [], filters = 
         router.get(`/category/${category.slug}`, payload, { preserveState: true, preserveScroll: true, replace: true });
     };
 
-    const [hero, ...rest] = articles.data;
-
     return (
         <PublicLayout>
             <Head title={`${category.name} — NewsPortal`}>
                 <meta name="description" content={category.description ?? `Latest ${category.name} news.`} />
             </Head>
 
-            {/* ── Compact category strip ── */}
+            {/* ── Compact category strip ───────────────────────── */}
             <div className="border-b" style={{ borderColor: `${accent}25`, background: `linear-gradient(135deg,${accent}10 0%,transparent 70%)` }}>
                 <div className="mx-auto max-w-7xl px-4 py-4">
                     {/* breadcrumb */}
@@ -310,23 +263,20 @@ export default function CategoryPage({ category, articles, tags = [], filters = 
                     </div>
 
                     <div className="flex flex-wrap items-center gap-3">
-                        {/* icon + name */}
                         <div className="flex size-10 shrink-0 items-center justify-center rounded-xl text-lg font-black text-white shadow-sm"
                             style={{ backgroundColor: accent }}>
                             {category.icon ?? category.name[0]}
                         </div>
-                        <div className="flex-1 min-w-0">
+                        <div className="min-w-0 flex-1">
                             <h1 className="text-xl font-black leading-none">{category.name}</h1>
                             <div className="mt-0.5 flex flex-wrap items-center gap-2 text-[11px] text-gray-500">
-                                {category.description && <span className="truncate max-w-xs">{category.description}</span>}
-                                <span className="rounded-full px-2 py-0.5 font-semibold text-white text-[10px]"
+                                {category.description && <span className="max-w-xs truncate">{category.description}</span>}
+                                <span className="rounded-full px-2 py-0.5 text-[10px] font-semibold text-white"
                                     style={{ backgroundColor: accent }}>
                                     {articles.total.toLocaleString()} articles
                                 </span>
                             </div>
                         </div>
-
-                        {/* sub-categories inline */}
                         {category.children && category.children.length > 0 && (
                             <div className="flex flex-wrap gap-1.5">
                                 {category.children.map((child) => (
@@ -347,35 +297,29 @@ export default function CategoryPage({ category, articles, tags = [], filters = 
             <div className="mx-auto max-w-7xl px-4 py-4">
                 <div className="flex gap-5 lg:items-start">
 
-                    {/* ══ MAIN CONTENT (2/3) ══════════════════════════════ */}
+                    {/* ══ MAIN CONTENT ════════════════════════════════════ */}
                     <div className="min-w-0 flex-1">
 
-                        {/* ── Filter bar ── */}
+                        {/* filter bar */}
                         <div className="mb-4 flex flex-wrap items-center gap-2 rounded-xl border border-gray-200 bg-white px-3 py-2 dark:border-gray-800 dark:bg-gray-900">
                             {/* sort chips */}
                             <div className="flex items-center gap-1">
-                                {[
-                                    { value: 'latest',  label: 'Latest' },
-                                    { value: 'popular', label: 'Popular' },
-                                    { value: 'oldest',  label: 'Oldest' },
-                                ].map((opt) => (
-                                    <button key={opt.value}
-                                        onClick={() => updateFilters({ sort: opt.value })}
-                                        className={`rounded-full px-2.5 py-1 text-[11px] font-semibold transition ${
-                                            selectedSort === opt.value
-                                                ? 'text-white shadow-sm'
-                                                : 'text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200'
+                                {(['latest', 'popular', 'oldest'] as const).map((val) => (
+                                    <button key={val}
+                                        onClick={() => updateFilters({ sort: val })}
+                                        className={`rounded-full px-2.5 py-1 text-[11px] font-semibold capitalize transition ${
+                                            selectedSort === val ? 'text-white shadow-sm' : 'text-gray-500 hover:text-gray-800 dark:text-gray-400'
                                         }`}
-                                        style={selectedSort === opt.value ? { backgroundColor: accent } : {}}>
-                                        {opt.label}
+                                        style={selectedSort === val ? { backgroundColor: accent } : {}}>
+                                        {val}
                                     </button>
                                 ))}
                             </div>
 
                             <div className="h-4 w-px bg-gray-200 dark:bg-gray-700" />
 
-                            {/* tag pills — scrollable */}
-                            <div className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto pb-px">
+                            {/* tag pills */}
+                            <div className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto pb-px [&::-webkit-scrollbar]:hidden">
                                 <button onClick={() => updateFilters({ tag: '' })}
                                     className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold transition ${
                                         !selectedTag ? 'text-white' : 'text-gray-500 hover:text-gray-800 dark:text-gray-400'
@@ -395,28 +339,14 @@ export default function CategoryPage({ category, articles, tags = [], filters = 
                                 ))}
                             </div>
 
-                            <div className="h-4 w-px bg-gray-200 dark:bg-gray-700" />
-
-                            {/* view mode toggle */}
-                            <div className="flex items-center gap-0.5 rounded-lg border border-gray-200 p-0.5 dark:border-gray-700">
-                                <button onClick={() => setViewMode('grid')}
-                                    className={`rounded-md p-1 transition ${viewMode === 'grid' ? 'bg-gray-100 dark:bg-gray-800' : 'hover:bg-gray-50 dark:hover:bg-gray-800'}`}>
-                                    <LayoutGrid className="size-3.5 text-gray-500" />
-                                </button>
-                                <button onClick={() => setViewMode('list')}
-                                    className={`rounded-md p-1 transition ${viewMode === 'list' ? 'bg-gray-100 dark:bg-gray-800' : 'hover:bg-gray-50 dark:hover:bg-gray-800'}`}>
-                                    <List className="size-3.5 text-gray-500" />
-                                </button>
-                            </div>
-
-                            <span className="ml-auto text-[11px] text-gray-400">
-                                {articles.from}–{articles.to} of {articles.total}
+                            <span className="ml-auto shrink-0 text-[11px] text-gray-400">
+                                {articles.from ?? 0}–{articles.to ?? 0} of {articles.total}
                             </span>
                         </div>
 
                         <AdSlot position="inline" page="category" categoryId={category.id} className="mb-4" />
 
-                        {/* ── Articles ── */}
+                        {/* article list */}
                         {articles.data.length === 0 ? (
                             <div className="rounded-xl border border-dashed border-gray-300 py-16 text-center dark:border-gray-700">
                                 <div className="mx-auto mb-3 flex size-14 items-center justify-center rounded-full text-2xl"
@@ -426,34 +356,10 @@ export default function CategoryPage({ category, articles, tags = [], filters = 
                                 <p className="font-semibold text-gray-500">No articles in this category yet.</p>
                                 <Link href="/" className="mt-2 inline-block text-sm text-red-600 hover:underline">Browse other news →</Link>
                             </div>
-                        ) : viewMode === 'grid' ? (
-                            <>
-                                {/* Hero + side stack */}
-                                {hero && (
-                                    <div className="mb-3 grid gap-3 sm:grid-cols-3">
-                                        <div className="sm:col-span-2">
-                                            <HeroCard article={hero} accentColor={accent} />
-                                        </div>
-                                        <div className="flex flex-col gap-3">
-                                            {rest.slice(0, 2).map((a) => (
-                                                <GridCard key={a.id} article={a} accentColor={accent} />
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
-                                {/* Remaining in 3-col grid */}
-                                {rest.length > 2 && (
-                                    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                                        {rest.slice(2).map((a) => (
-                                            <GridCard key={a.id} article={a} accentColor={accent} />
-                                        ))}
-                                    </div>
-                                )}
-                            </>
                         ) : (
-                            <div className="flex flex-col gap-2">
+                            <div className="flex flex-col gap-2.5">
                                 {articles.data.map((a) => (
-                                    <ListCard key={a.id} article={a} accentColor={accent} />
+                                    <ArticleRow key={a.id} article={a} accentColor={accent} />
                                 ))}
                             </div>
                         )}
@@ -462,24 +368,15 @@ export default function CategoryPage({ category, articles, tags = [], filters = 
                         <AdSlot position="footer" page="category" categoryId={category.id} className="mt-6" />
                     </div>
 
-                    {/* ══ SIDEBAR (1/3) ═══════════════════════════════════ */}
+                    {/* ══ SIDEBAR ═════════════════════════════════════════ */}
                     <aside className="hidden w-72 shrink-0 space-y-5 lg:block">
 
-                        {/* ── Trending in this category ── */}
-                        {trending.length > 0 && (
-                            <div>
-                                <SectionLabel icon={Flame} title="Trending" color={accent} />
-                                <div className="space-y-2">
-                                    {trending.map((a, i) => (
-                                        <ListCard key={a.id} article={a} accentColor={accent} rank={i + 1} />
-                                    ))}
-                                </div>
-                            </div>
-                        )}
+                        {/* Trending — Home LatestSidebar style */}
+                        <TrendingSidebar articles={trending} accentColor={accent} />
 
                         <AdSlot position="sidebar" page="category" categoryId={category.id} />
 
-                        {/* ── Other categories ── */}
+                        {/* Other categories */}
                         {otherCategories.length > 0 && (
                             <div>
                                 <SectionLabel icon={TrendingUp} title="Other Categories" color={accent} />
@@ -504,7 +401,7 @@ export default function CategoryPage({ category, articles, tags = [], filters = 
                             </div>
                         )}
 
-                        {/* ── Tag cloud ── */}
+                        {/* Tag cloud */}
                         {tags.length > 0 && (
                             <div>
                                 <SectionLabel icon={TagIcon} title="Tags" color={accent} />

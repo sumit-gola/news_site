@@ -258,16 +258,43 @@ class PublicController extends Controller
             ->withQueryString()
             ->through(fn (Article $a) => $this->articleCardData($a));
 
+        // Author stats
+        $totalArticles = Article::published()->where('user_id', $author->id)->count();
+        $totalViews    = Article::published()->where('user_id', $author->id)->sum('views');
+
+        // Top 5 most-read articles (sidebar)
+        $mostRead = Article::published()
+            ->with(['categories:id,name,color,slug'])
+            ->where('user_id', $author->id)
+            ->orderByDesc('views')
+            ->limit(5)
+            ->get()
+            ->map(fn (Article $a) => $this->articleCardData($a));
+
+        // Categories the author writes in most
+        $authorCategories = \App\Models\Category::withCount(['articles' => fn ($q) => $q->where('status', 'published')->where('user_id', $author->id)])
+            ->having('articles_count', '>', 0)
+            ->orderByDesc('articles_count')
+            ->limit(8)
+            ->get(['id', 'name', 'slug', 'color', 'icon']);
+
         return Inertia::render('public/Author', [
             'author' => [
-                'id' => $author->id,
-                'name' => $author->name,
-                'slug' => $this->authorSlug($author),
-                'bio' => 'Staff journalist covering breaking stories and in-depth reporting.',
+                'id'      => $author->id,
+                'name'    => $author->name,
+                'slug'    => $this->authorSlug($author),
+                'bio'     => 'Staff journalist covering breaking stories and in-depth reporting.',
+                'joined'  => $author->created_at?->format('M Y'),
             ],
-            'articles' => $articles,
-            'filters' => $request->only(['sort']),
-            'navCategories' => $this->navCategories(),
+            'stats' => [
+                'total_articles' => $totalArticles,
+                'total_views'    => (int) $totalViews,
+            ],
+            'mostRead'         => $mostRead,
+            'authorCategories' => $authorCategories,
+            'articles'         => $articles,
+            'filters'          => $request->only(['sort']),
+            'navCategories'    => $this->navCategories(),
         ]);
     }
 
