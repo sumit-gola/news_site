@@ -1,5 +1,5 @@
 import { Head, Link, router } from '@inertiajs/react';
-import { Search, LayoutGrid, Rows3, Filter, X, Clock, Eye, TrendingUp, Flame, ChevronLeft, ChevronRight, SlidersHorizontal } from 'lucide-react';
+import { Search, Filter, X, Clock, Eye, TrendingUp, Flame, ChevronLeft, ChevronRight, SlidersHorizontal } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import PublicLayout from '@/layouts/public-layout';
 import type { Article, Category, Paginated, Tag } from '@/types';
@@ -97,51 +97,12 @@ function ArticleRow({ article }: { article: Article }) {
     );
 }
 
-/* ─── Article grid card ──────────────────────────────── */
-function ArticleGridCard({ article }: { article: Article }) {
-    const cat = article.categories?.[0];
-    const isNew = article.published_at
-        ? (Date.now() - new Date(article.published_at).getTime()) < 86400000 * 2 : false;
-    return (
-        <Link href={`/news/${article.slug}`}
-            className="group flex flex-col overflow-hidden rounded-xl border border-gray-100 bg-white shadow-sm transition hover:border-gray-200 hover:shadow-md dark:border-gray-800 dark:bg-gray-900">
-            <div className="relative overflow-hidden">
-                {article.featured_image_url ? (
-                    <img src={article.featured_image_url} alt={article.title}
-                        className="h-44 w-full object-cover transition duration-300 group-hover:scale-105" />
-                ) : (
-                    <div className="flex h-44 items-center justify-center bg-gray-100 text-5xl font-black text-gray-300 dark:bg-gray-800 dark:text-gray-700">
-                        {article.title[0]}
-                    </div>
-                )}
-                {isNew && <span className="absolute top-2 left-2 rounded bg-red-500 px-1.5 py-0.5 text-[9px] font-bold text-white">NEW</span>}
-            </div>
-            <div className="flex flex-1 flex-col gap-1.5 p-3">
-                {cat && (
-                    <span className="inline-block w-fit rounded px-1.5 py-0.5 text-[10px] font-bold text-white"
-                        style={{ backgroundColor: cat.color ?? '#ef4444' }}>{cat.name}</span>
-                )}
-                <h3 className="line-clamp-2 text-[13px] font-bold leading-snug transition group-hover:text-red-600 dark:group-hover:text-red-400">
-                    {article.title}
-                </h3>
-                {article.excerpt && (
-                    <p className="line-clamp-2 text-[11px] text-gray-500">{article.excerpt}</p>
-                )}
-                <div className="mt-auto flex items-center justify-between text-[10px] text-gray-400 pt-1">
-                    <span className="font-medium text-gray-600 dark:text-gray-400">{article.author?.name ?? 'Staff'}</span>
-                    <span className="flex items-center gap-0.5"><Eye className="size-2.5" />{fmtV(article.views)}</span>
-                </div>
-            </div>
-        </Link>
-    );
-}
-
 /* ─── Skeleton ───────────────────────────────────────── */
-function Skeleton({ listMode }: { listMode: boolean }) {
+function Skeleton() {
     return (
-        <div className={`animate-pulse overflow-hidden rounded-xl border border-gray-100 bg-white dark:border-gray-800 dark:bg-gray-900 ${listMode ? 'flex' : ''}`}>
-            <div className={`bg-gray-200 dark:bg-gray-700 ${listMode ? 'my-3 ml-3 h-[90px] w-32 shrink-0 rounded-lg' : 'h-44 w-full'}`} />
-            <div className={`flex-1 space-y-2 ${listMode ? 'p-3' : 'p-3'}`}>
+        <div className="flex animate-pulse overflow-hidden rounded-xl border border-gray-100 bg-white dark:border-gray-800 dark:bg-gray-900">
+            <div className="my-3 ml-3 h-[90px] w-32 shrink-0 rounded-lg bg-gray-200 dark:bg-gray-700" />
+            <div className="flex-1 space-y-2 p-3">
                 <div className="h-3 w-20 rounded bg-gray-200 dark:bg-gray-700" />
                 <div className="h-4 w-full rounded bg-gray-200 dark:bg-gray-700" />
                 <div className="h-4 w-4/5 rounded bg-gray-200 dark:bg-gray-700" />
@@ -211,7 +172,6 @@ export default function NewsIndex({ articles, filters = {} as Filters, categorie
     const selectedFromDate = typeof filters?.from_date === 'string' ? filters.from_date : '';
     const selectedToDate   = typeof filters?.to_date   === 'string' ? filters.to_date   : '';
 
-    const [viewMode, setViewMode]     = useState<'grid' | 'list'>('grid');
     const [showAdvanced, setShowAdvanced] = useState(false);
     const [isLoading, setIsLoading]   = useState(false);
     const [localSearch, setLocalSearch] = useState(selectedQ);
@@ -236,7 +196,6 @@ export default function NewsIndex({ articles, filters = {} as Filters, categorie
     useEffect(() => { setIsLoading(false); }, [articles.current_page, articles.total]);
     useEffect(() => { setLocalSearch(selectedQ); }, [filters.q]);
 
-    const listMode = viewMode === 'list';
     const visibleTags = useMemo(() => tags.slice(0, 16), [tags]);
 
     /* active filter pills */
@@ -314,17 +273,6 @@ export default function NewsIndex({ articles, filters = {} as Filters, categorie
                                         </span>
                                     )}
                                 </button>
-                                {/* view toggle */}
-                                <div className="flex items-center gap-0.5 rounded-xl border border-gray-200 bg-white p-1 shadow-sm dark:border-gray-700 dark:bg-gray-900">
-                                    <button onClick={() => setViewMode('grid')}
-                                        className={`flex size-7 items-center justify-center rounded-lg transition ${viewMode === 'grid' ? 'bg-red-600 text-white' : 'text-gray-400 hover:text-gray-600'}`}>
-                                        <LayoutGrid className="size-3.5" />
-                                    </button>
-                                    <button onClick={() => setViewMode('list')}
-                                        className={`flex size-7 items-center justify-center rounded-lg transition ${viewMode === 'list' ? 'bg-red-600 text-white' : 'text-gray-400 hover:text-gray-600'}`}>
-                                        <Rows3 className="size-3.5" />
-                                    </button>
-                                </div>
                             </div>
 
                             {/* advanced filters panel */}
@@ -402,10 +350,10 @@ export default function NewsIndex({ articles, filters = {} as Filters, categorie
                             </div>
                         </div>
 
-                        {/* article grid / list */}
+                        {/* article list */}
                         {isLoading ? (
-                            <div className={listMode ? 'space-y-2.5' : 'grid gap-3 sm:grid-cols-2 lg:grid-cols-3'}>
-                                {Array.from({ length: listMode ? 5 : 6 }).map((_, i) => <Skeleton key={i} listMode={listMode} />)}
+                            <div className="space-y-2.5">
+                                {Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} />)}
                             </div>
                         ) : articles.data.length === 0 ? (
                             <div className="rounded-xl border border-dashed border-gray-200 py-20 text-center dark:border-gray-700">
@@ -414,13 +362,9 @@ export default function NewsIndex({ articles, filters = {} as Filters, categorie
                                 <button onClick={() => updateFilters({ q: undefined, category: undefined, tag: undefined })}
                                     className="mt-2 text-sm text-red-600 hover:underline">Clear filters</button>
                             </div>
-                        ) : listMode ? (
+                        ) : (
                             <div className="flex flex-col gap-2.5">
                                 {articles.data.map((a) => <ArticleRow key={a.id} article={a} />)}
-                            </div>
-                        ) : (
-                            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                                {articles.data.map((a) => <ArticleGridCard key={a.id} article={a} />)}
                             </div>
                         )}
 
