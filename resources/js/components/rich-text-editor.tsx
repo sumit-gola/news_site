@@ -1,4 +1,7 @@
 import { CKEditor } from '@ckeditor/ckeditor5-react';
+import { LibraryBig } from 'lucide-react';
+import MediaPickerModal from '@/components/media/MediaPickerModal';
+import { Button } from '@/components/ui/button';
 import {
     Alignment,
     Autoformat,
@@ -82,6 +85,8 @@ type RichTextEditorProps = {
     /** Pass false to disable image uploads. Defaults to /editor/images/upload */
     uploadUrl?: string | false;
     placeholder?: string;
+    /** Show the "Insert from Media Library" button. Default true. */
+    showMediaPicker?: boolean;
 };
 
 const BASE_PLUGINS = [
@@ -306,29 +311,73 @@ export function RichTextEditor({
     onChange,
     uploadUrl = '/editor/images/upload',
     placeholder,
+    showMediaPicker = true,
 }: RichTextEditorProps) {
     const [wordCount, setWordCount] = React.useState<WordCountData>({ words: 0, characters: 0 });
+    const [pickerOpen, setPickerOpen] = React.useState(false);
+    const editorRef = React.useRef<{ getData: () => string; model: unknown; execute: (cmd: string, opts?: unknown) => void } | null>(null);
 
     const config = React.useMemo(
         () => buildConfig(setWordCount, placeholder, uploadUrl),
         [placeholder, uploadUrl],
     );
 
+    const handleMediaSelect = React.useCallback((url: string, altText: string) => {
+        const editor = editorRef.current;
+        if (!editor) return;
+        // Insert image via CKEditor model API
+        (editor as unknown as { model: { change: (cb: (writer: unknown) => void) => void; document: { selection: unknown }; insertContent: (el: unknown, sel: unknown) => void } })
+            .model.change((writer: unknown) => {
+                const w = writer as { createElement: (tag: string, attrs: Record<string, string>) => unknown };
+                const imgEl = w.createElement('imageBlock', { src: url, alt: altText });
+                const ed = editor as unknown as { model: { document: { selection: unknown }; insertContent: (el: unknown, sel: unknown) => void } };
+                ed.model.insertContent(imgEl, ed.model.document.selection);
+            });
+        setPickerOpen(false);
+    }, []);
+
     return (
-        <div className="ckeditor-shell overflow-hidden rounded-md border border-input bg-background shadow-sm">
-            <CKEditor
-                editor={ClassicEditor}
-                config={config}
-                data={value}
-                onChange={(_event: unknown, editor: { getData: () => string }) => {
-                    onChange(editor.getData());
-                }}
-            />
-            <div className="flex items-center justify-end gap-4 border-t border-input px-3 py-1.5 text-xs text-muted-foreground">
-                <span>{wordCount.words.toLocaleString()} words</span>
-                <span>{wordCount.characters.toLocaleString()} characters</span>
+        <>
+            <div className="ckeditor-shell overflow-hidden rounded-md border border-input bg-background shadow-sm">
+                {showMediaPicker && (
+                    <div className="flex items-center gap-2 border-b border-input bg-muted/30 px-2 py-1.5">
+                        <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="h-7 gap-1.5 text-xs"
+                            onClick={() => setPickerOpen(true)}
+                        >
+                            <LibraryBig className="size-3.5" />
+                            Media Library
+                        </Button>
+                    </div>
+                )}
+                <CKEditor
+                    editor={ClassicEditor}
+                    config={config}
+                    data={value}
+                    onReady={(editor) => {
+                        editorRef.current = editor as unknown as typeof editorRef.current;
+                    }}
+                    onChange={(_event: unknown, editor: { getData: () => string }) => {
+                        onChange(editor.getData());
+                    }}
+                />
+                <div className="flex items-center justify-end gap-4 border-t border-input px-3 py-1.5 text-xs text-muted-foreground">
+                    <span>{wordCount.words.toLocaleString()} words</span>
+                    <span>{wordCount.characters.toLocaleString()} characters</span>
+                </div>
             </div>
-        </div>
+
+            {showMediaPicker && (
+                <MediaPickerModal
+                    open={pickerOpen}
+                    onClose={() => setPickerOpen(false)}
+                    onSelect={handleMediaSelect}
+                />
+            )}
+        </>
     );
 }
 

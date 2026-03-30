@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\CommentController as AdminCommentController;
+use App\Http\Controllers\Admin\MediaController;
 use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\AdAnalyticsController;
@@ -8,6 +9,7 @@ use App\Http\Controllers\Admin\AdSlotController;
 use App\Http\Controllers\Admin\AdvertisementController;
 use App\Http\Controllers\Admin\AdvertiserController;
 use App\Http\Controllers\Api\AdSlotController as PublicAdSlotController;
+use App\Http\Controllers\Api\MediaController as ApiMediaController;
 use App\Http\Controllers\ArticleController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\EditorImageController;
@@ -147,6 +149,13 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'verified', 'role:ad
     Route::delete('comments/{comment}/force', [AdminCommentController::class, 'forceDestroy'])->name('comments.force-destroy');
     Route::delete('comments/{comment}', [AdminCommentController::class, 'destroy'])->name('comments.destroy');
 
+    // Media Library
+    Route::get('media', [MediaController::class, 'index'])->name('media.index');
+    Route::post('media', [MediaController::class, 'store'])->name('media.store');
+    Route::put('media/{media}', [MediaController::class, 'update'])->name('media.update');
+    Route::delete('media/bulk', [MediaController::class, 'bulkDestroy'])->name('media.bulk-destroy');
+    Route::delete('media/{media}', [MediaController::class, 'destroy'])->name('media.destroy');
+
     // Advertisement Management
     Route::get('advertisements/analytics', [AdAnalyticsController::class, 'index'])->name('advertisements.analytics');
     Route::get('advertisements/analytics/export', [AdAnalyticsController::class, 'export'])->name('advertisements.analytics.export');
@@ -227,6 +236,8 @@ Route::middleware(['auth', 'verified', 'role:admin,manager,reporter'])->group(fu
 });
 
 require __DIR__.'/settings.php';
+
+Route::middleware(['auth'])->get('/api/media', [ApiMediaController::class, 'index'])->name('api.media.index');
 
 Route::get('/api/ad-slots', [PublicAdSlotController::class, 'index'])->name('api.ad-slots.index');
 Route::post('/api/ad-slots/{advertisement}/impression', [PublicAdSlotController::class, 'trackImpression'])->name('api.ad-slots.impression');

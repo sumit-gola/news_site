@@ -4,6 +4,7 @@ import {
     BookOpen,
     FileText,
     FolderGit2,
+    HardDrive,
     ImagePlus,
     LayoutDashboard,
     LayoutGrid,
@@ -112,6 +113,7 @@ function AdminNav({ activeAdsCount, pendingCommentsCount }: { activeAdsCount: nu
         { title: 'Articles',            href: '/admin/articles',    icon: Newspaper },
         { title: 'Pages',               href: '/pages',             icon: FileText  },
         { title: 'Categories',          href: '/categories',        icon: BookOpen  },
+        { title: 'Media Library',       href: '/admin/media',       icon: HardDrive },
         { title: 'Settings',            href: '/settings/profile',  icon: Settings  },
     ];
 
