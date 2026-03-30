@@ -1,4 +1,6 @@
 import { Head, Link, router } from '@inertiajs/react';
+import React from 'react';
+import AdSlot from '@/components/ads/AdSlot';
 import PublicLayout from '@/layouts/public-layout';
 import type { Article, Paginated, Tag } from '@/types';
 
@@ -27,6 +29,8 @@ export default function TagPage({ tag, articles, filters = {} }: Props) {
             </Head>
 
             <div className="mx-auto max-w-6xl px-4 py-8">
+                <AdSlot position="header" page="tag" className="mb-6" />
+
                 <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
                     <div>
                         <p className="text-xs font-black uppercase tracking-widest text-red-600">Tag Archive</p>
@@ -51,8 +55,10 @@ export default function TagPage({ tag, articles, filters = {} }: Props) {
                     <div className="rounded-xl border border-dashed p-10 text-center text-sm text-gray-500">No articles under this tag yet.</div>
                 ) : (
                     <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
-                        {articles.data.map((article) => (
-                            <article key={article.id} className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+                        {articles.data.map((article, index) => (
+                            <React.Fragment key={article.id}>
+                            {index === 3 && <div className="col-span-full"><AdSlot position="between_articles" page="tag" /></div>}
+                            <article className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-gray-900">
                                 <Link href={`/news/${article.slug}`} className="block overflow-hidden rounded-lg">
                                     {article.featured_image_url ? (
                                         <img src={article.featured_image_url} alt={article.title} className="h-44 w-full object-cover" />
@@ -68,9 +74,12 @@ export default function TagPage({ tag, articles, filters = {} }: Props) {
                                 {article.excerpt && <p className="mt-2 line-clamp-2 text-sm text-gray-600 dark:text-gray-300">{article.excerpt}</p>}
                                 <div className="mt-3 text-xs text-gray-500">{article.author?.name ?? 'Staff'} · {new Date(article.updated_at).toLocaleDateString()}</div>
                             </article>
+                            </React.Fragment>
                         ))}
                     </div>
                 )}
+
+                <AdSlot position="inline" page="tag" className="my-6" />
 
                 <div className="mt-8 flex flex-wrap gap-2">
                     {articles.links.map((link, idx) => (
@@ -82,6 +91,8 @@ export default function TagPage({ tag, articles, filters = {} }: Props) {
                         />
                     ))}
                 </div>
+
+                <AdSlot position="footer" page="tag" className="mt-8" />
             </div>
         </PublicLayout>
     );

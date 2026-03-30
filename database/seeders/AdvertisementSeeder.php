@@ -24,174 +24,132 @@ class AdvertisementSeeder extends Seeder
             return;
         }
 
-        $ads = [
-            [
-                'title' => 'Upgrade Your Team With AI Tools',
-                'ad_type' => 'image',
-                'image_path' => 'https://picsum.photos/seed/ad-1/970/250',
-                'target_url' => 'https://example.com/ai-tools',
-                'open_in_new_tab' => true,
-                'width' => 970,
-                'height' => 250,
-                'position' => 'header',
-                'pages' => ['home'],
-                'slot_slug' => 'home-top-banner',
-                'priority' => 10,
-                'rotation_type' => 'random',
-                'status' => 'active',
-                'start_date' => now()->subDays(10),
-                'end_date' => now()->addDays(20),
-            ],
-            [
-                'title' => 'Invest Smarter In 2026',
-                'ad_type' => 'html',
-                'html_code' => '<div style="padding:14px;border:1px solid #e5e7eb;border-radius:8px;font-family:Arial,sans-serif;"><h4 style="margin:0 0 8px;">Market Insights Weekly</h4><p style="margin:0 0 10px;">Get expert portfolio ideas every Monday.</p><a href="https://example.com/invest" target="_blank" rel="noreferrer">Start Free</a></div>',
-                'target_url' => 'https://example.com/invest',
-                'open_in_new_tab' => true,
-                'width' => 300,
-                'height' => 250,
-                'position' => 'sidebar',
-                'pages' => ['article', 'category'],
-                'slot_slug' => 'article-sidebar',
-                'priority' => 8,
-                'rotation_type' => 'sequential',
-                'status' => 'active',
-                'start_date' => now()->subDays(3),
-                'end_date' => now()->addDays(45),
-            ],
-            [
-                'title' => 'Book Your Summer Escape',
-                'ad_type' => 'script',
-                'script_code' => '<script>document.write("<div style=\\"padding:12px;border:1px dashed #94a3b8;border-radius:8px;font-family:Arial,sans-serif;\\">Travel Deals: Up to 40% OFF</div>");</script>',
-                'target_url' => 'https://example.com/travel',
-                'open_in_new_tab' => true,
-                'width' => 728,
-                'height' => 90,
-                'position' => 'inline',
-                'pages' => ['article'],
-                'slot_slug' => 'article-inline',
-                'priority' => 6,
-                'rotation_type' => 'random',
-                'status' => 'active',
-                'start_date' => now()->subDays(1),
-                'end_date' => now()->addDays(30),
-            ],
-            [
-                'title' => 'Health Checkup Camp',
-                'ad_type' => 'image',
-                'image_path' => 'https://picsum.photos/seed/ad-4/970/90',
-                'target_url' => 'https://example.com/health-camp',
-                'open_in_new_tab' => true,
-                'width' => 970,
-                'height' => 90,
-                'position' => 'header',
-                'pages' => ['category'],
-                'slot_slug' => 'category-header',
-                'priority' => 7,
-                'rotation_type' => 'sequential',
-                'status' => 'active',
-                'start_date' => now()->subDays(7),
-                'end_date' => now()->addDays(14),
-            ],
-            [
-                'title' => 'Footer Promo: Developer Conference',
-                'ad_type' => 'image',
-                'image_path' => 'https://picsum.photos/seed/ad-5/970/90',
-                'target_url' => 'https://example.com/devconf',
-                'open_in_new_tab' => true,
-                'width' => 970,
-                'height' => 90,
-                'position' => 'footer',
-                'pages' => ['home', 'article', 'category', 'search'],
-                'slot_slug' => 'global-footer',
-                'priority' => 5,
-                'rotation_type' => 'random',
-                'status' => 'paused',
-                'start_date' => now()->subDays(15),
-                'end_date' => now()->addDays(5),
-            ],
+        $allPages = ['home', 'article', 'category', 'search', 'news', 'tag', 'page'];
+
+        // Build one "Advertise Here" ad per position (18 total)
+        $positions = [
+            ['position' => 'header',              'slug' => 'header-banner',         'w' => 970, 'h' => 250, 'label' => 'Header Banner'],
+            ['position' => 'sidebar',             'slug' => 'sidebar-ad',            'w' => 300, 'h' => 250, 'label' => 'Sidebar'],
+            ['position' => 'inline',              'slug' => 'inline-ad',             'w' => 728, 'h' => 90,  'label' => 'Inline'],
+            ['position' => 'footer',              'slug' => 'footer-banner',         'w' => 970, 'h' => 90,  'label' => 'Footer'],
+            ['position' => 'popup',               'slug' => 'popup-ad',              'w' => 400, 'h' => 300, 'label' => 'Popup'],
+            ['position' => 'below_nav',           'slug' => 'below-nav',             'w' => 970, 'h' => 90,  'label' => 'Below Nav'],
+            ['position' => 'left_sidebar_top',    'slug' => 'left-sidebar-top',      'w' => 160, 'h' => 600, 'label' => 'Left Sidebar Top'],
+            ['position' => 'left_sidebar_bottom', 'slug' => 'left-sidebar-bottom',   'w' => 160, 'h' => 600, 'label' => 'Left Sidebar Bottom'],
+            ['position' => 'right_sidebar_top',   'slug' => 'right-sidebar-top',     'w' => 300, 'h' => 250, 'label' => 'Right Sidebar Top'],
+            ['position' => 'right_sidebar_bottom','slug' => 'right-sidebar-bottom',  'w' => 300, 'h' => 250, 'label' => 'Right Sidebar Bottom'],
+            ['position' => 'in_article',          'slug' => 'in-article',            'w' => 728, 'h' => 90,  'label' => 'In Article'],
+            ['position' => 'between_articles',    'slug' => 'between-articles',      'w' => 728, 'h' => 90,  'label' => 'Between Articles'],
+            ['position' => 'sticky_top',          'slug' => 'sticky-top',            'w' => 970, 'h' => 90,  'label' => 'Sticky Top'],
+            ['position' => 'sticky_bottom',       'slug' => 'sticky-bottom',         'w' => 970, 'h' => 90,  'label' => 'Sticky Bottom'],
+            ['position' => 'floating_bottom_right','slug' => 'floating-bottom-right','w' => 300, 'h' => 250, 'label' => 'Floating Bottom Right'],
+            ['position' => 'floating_bottom_left','slug' => 'floating-bottom-left',  'w' => 300, 'h' => 250, 'label' => 'Floating Bottom Left'],
+            ['position' => 'full_screen_overlay', 'slug' => 'full-screen-overlay',   'w' => 640, 'h' => 480, 'label' => 'Full Screen Overlay'],
+            ['position' => 'notification_bar',    'slug' => 'notification-bar',      'w' => 970, 'h' => 60,  'label' => 'Notification Bar'],
         ];
 
-        foreach ($ads as $index => $data) {
-            $slot = $slots->get($data['slot_slug']);
-
+        $count = 0;
+        foreach ($positions as $index => $p) {
+            $slot = $slots->get($p['slug']);
             if (!$slot) {
+                $this->command?->warn("Slot '{$p['slug']}' not found — skipping {$p['label']}.");
                 continue;
             }
 
-            $categorySampleCount = min(2, count($categoryIds));
-            $selectedCategoryIds = $categorySampleCount > 0
-                ? (array) Arr::random($categoryIds, $categorySampleCount)
-                : [];
+            $title = "Advertise Here — {$p['label']} ({$p['w']}×{$p['h']})";
+            $bg = $this->colorForIndex($index);
 
-            $ad = Advertisement::query()->updateOrCreate(
-                ['title' => $data['title']],
+            $html = '<div style="'
+                . "width:100%;height:{$p['h']}px;max-width:{$p['w']}px;"
+                . "background:{$bg};display:flex;flex-direction:column;align-items:center;justify-content:center;"
+                . 'border:2px dashed rgba(255,255,255,0.5);border-radius:8px;font-family:Arial,sans-serif;color:#fff;text-align:center;'
+                . '">'
+                . '<span style="font-size:22px;font-weight:900;letter-spacing:1px;">ADVERTISE HERE</span>'
+                . "<span style=\"font-size:12px;margin-top:6px;opacity:0.85;\">{$p['label']} · {$p['w']}×{$p['h']}</span>"
+                . '</div>';
+
+            $categorySample = min(2, count($categoryIds));
+            $selectedCats = $categorySample > 0 ? (array) Arr::random($categoryIds, $categorySample) : [];
+
+            $ad = Advertisement::withTrashed()->updateOrCreate(
+                ['slug' => Str::slug($title)],
                 [
                     'advertiser_id' => $advertisers[$index % $advertisers->count()]->id,
                     'ad_slot_id' => $slot->id,
-                    'title' => $data['title'],
-                    'slug' => Str::slug($data['title']),
-                    'description' => $data['title'],
-                    'ad_type' => $data['ad_type'],
-                    'image_url' => $data['image_path'] ?? null,
-                    'image_path' => $data['image_path'] ?? null,
+                    'title' => $title,
+                    'slug' => Str::slug($title),
+                    'description' => "Placeholder ad for the {$p['label']} position.",
+                    'ad_type' => 'html',
+                    'image_url' => null,
+                    'image_path' => null,
                     'video_url' => null,
-                    'html_code' => $data['html_code'] ?? null,
-                    'script_code' => $data['script_code'] ?? null,
-                    'size' => (($data['width'] ?? null) && ($data['height'] ?? null))
-                        ? ($data['width'] . 'x' . $data['height'])
-                        : 'custom',
-                    'custom_width' => $data['width'] ?? null,
-                    'custom_height' => $data['height'] ?? null,
-                    'redirect_url' => $data['target_url'] ?? null,
-                    'target_url' => $data['target_url'] ?? null,
-                    'open_in_new_tab' => $data['open_in_new_tab'],
-                    'width' => $data['width'] ?? null,
-                    'height' => $data['height'] ?? null,
-                    'position' => $data['position'],
-                    'pages' => $data['pages'],
-                    'category_ids' => $selectedCategoryIds,
-                    'start_date' => $data['start_date'],
-                    'end_date' => $data['end_date'],
+                    'html_code' => $html,
+                    'script_code' => null,
+                    'size' => "{$p['w']}x{$p['h']}",
+                    'custom_width' => $p['w'],
+                    'custom_height' => $p['h'],
+                    'redirect_url' => 'https://example.com/advertise',
+                    'target_url' => 'https://example.com/advertise',
+                    'open_in_new_tab' => true,
+                    'width' => $p['w'],
+                    'height' => $p['h'],
+                    'position' => $p['position'],
+                    'pages' => $allPages,
+                    'category_ids' => $selectedCats,
+                    'start_date' => now()->subDays(5),
+                    'end_date' => now()->addYear(),
                     'daily_limit' => null,
-                    'priority' => $data['priority'],
+                    'priority' => 10,
                     'is_responsive' => true,
                     'targeting' => [
-                        'pages' => $data['pages'],
-                        'category_ids' => $selectedCategoryIds,
-                        'position' => $data['position'],
+                        'pages' => $allPages,
+                        'category_ids' => $selectedCats,
+                        'position' => $p['position'],
                     ],
-                    'rotation_type' => $data['rotation_type'],
-                    'status' => $data['status'],
+                    'rotation_type' => 'random',
+                    'status' => 'active',
+                    'display_behavior' => 'standard',
+                    'display_config' => [],
+                    'is_closable' => false,
+                    'close_button_delay_seconds' => 0,
+                    'schedule_rules' => [],
+                    'max_total_impressions' => null,
+                    'max_daily_impressions' => null,
+                    'url_patterns' => [],
+                    'exclude_rules' => [],
+                    'deleted_at' => null,
                 ],
             );
 
-            $impressions = fake()->numberBetween(1200, 12000);
-            $clicks = fake()->numberBetween(30, (int) floor($impressions * 0.12));
+            // Seed some performance data
+            $impressions = fake()->numberBetween(500, 5000);
+            $clicks = fake()->numberBetween(10, (int) floor($impressions * 0.08));
+            $ad->update(['total_impressions' => $impressions, 'total_clicks' => $clicks]);
 
-            $ad->update([
-                'total_impressions' => $impressions,
-                'total_clicks' => $clicks,
-            ]);
-
-            for ($day = 0; $day < 14; $day++) {
-                $dailyImpressions = fake()->numberBetween(40, 700);
-                $dailyClicks = fake()->numberBetween(1, (int) floor($dailyImpressions * 0.12));
-
+            for ($day = 0; $day < 7; $day++) {
+                $di = fake()->numberBetween(30, 400);
+                $dc = fake()->numberBetween(1, (int) max(1, floor($di * 0.08)));
                 AdPerformance::query()->updateOrCreate(
-                    [
-                        'advertisement_id' => $ad->id,
-                        'date' => now()->subDays($day)->toDateString(),
-                    ],
-                    [
-                        'impressions' => $dailyImpressions,
-                        'clicks' => $dailyClicks,
-                        'ctr' => $dailyImpressions > 0 ? round(($dailyClicks / $dailyImpressions) * 100, 4) : 0,
-                    ],
+                    ['advertisement_id' => $ad->id, 'date' => now()->subDays($day)->toDateString()],
+                    ['impressions' => $di, 'clicks' => $dc, 'ctr' => $di > 0 ? round(($dc / $di) * 100, 4) : 0],
                 );
             }
+
+            $count++;
         }
 
-        $this->command?->info('AdvertisementSeeder completed.');
+        $this->command?->info("AdvertisementSeeder completed — {$count} 'Advertise Here' ads seeded (all 18 positions).");
+    }
+
+    private function colorForIndex(int $i): string
+    {
+        $palette = [
+            '#6366f1', '#8b5cf6', '#ec4899', '#ef4444', '#f97316',
+            '#eab308', '#22c55e', '#14b8a6', '#06b6d4', '#3b82f6',
+            '#a855f7', '#f43f5e', '#d946ef', '#0ea5e9', '#84cc16',
+            '#f59e0b', '#10b981', '#6d28d9',
+        ];
+
+        return $palette[$i % count($palette)];
     }
 }

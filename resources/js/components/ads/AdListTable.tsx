@@ -35,6 +35,7 @@ type VisibleColumn =
     | 'title'
     | 'client'
     | 'position'
+    | 'display_behavior'
     | 'pages'
     | 'size'
     | 'schedule'
@@ -55,6 +56,7 @@ const defaultColumns: Record<VisibleColumn, boolean> = {
     title: true,
     client: true,
     position: true,
+    display_behavior: true,
     pages: true,
     size: true,
     schedule: true,
@@ -202,7 +204,7 @@ export default function AdListTable({ ads, slots }: Props) {
                             </div>
                             <AdPreviewCard ad={ad} />
                             <div className="grid gap-1 text-xs text-muted-foreground">
-                                <p>{ad.advertiser?.name ?? 'No client'} • {ad.position}</p>
+                                <p>{ad.advertiser?.name ?? 'No client'} • {ad.position} • {ad.display_behavior?.replace('_', ' ') ?? 'standard'}</p>
                                 <p>Pages: {ad.pages.join(', ') || 'All'}</p>
                                 <p>CTR: {ad.ctr}% • {ad.total_clicks} clicks</p>
                             </div>
@@ -225,6 +227,7 @@ export default function AdListTable({ ads, slots }: Props) {
                             {visibleColumns.title && <TableHead>Title</TableHead>}
                             {visibleColumns.client && <TableHead>Client</TableHead>}
                             {visibleColumns.position && <TableHead>Position</TableHead>}
+                            {visibleColumns.display_behavior && <TableHead>Behavior</TableHead>}
                             {visibleColumns.pages && <TableHead>Pages</TableHead>}
                             {visibleColumns.size && <TableHead>Size</TableHead>}
                             {visibleColumns.schedule && <TableHead>Schedule</TableHead>}
@@ -248,6 +251,7 @@ export default function AdListTable({ ads, slots }: Props) {
                                 {visibleColumns.title && <TableCell className={rowPadding + ' font-medium'}>{ad.title}</TableCell>}
                                 {visibleColumns.client && <TableCell className={rowPadding}>{ad.advertiser?.name ?? '-'}</TableCell>}
                                 {visibleColumns.position && <TableCell className={rowPadding + ' capitalize'}>{ad.position}</TableCell>}
+                                {visibleColumns.display_behavior && <TableCell className={rowPadding}><Badge variant="outline" className="capitalize">{ad.display_behavior?.replace('_', ' ') ?? 'standard'}</Badge></TableCell>}
                                 {visibleColumns.pages && <TableCell className={rowPadding}>{ad.pages.join(', ') || 'All'}</TableCell>}
                                 {visibleColumns.size && <TableCell className={rowPadding}>{ad.width ?? '-'} x {ad.height ?? '-'}</TableCell>}
                                 {visibleColumns.schedule && (

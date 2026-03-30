@@ -1,6 +1,7 @@
 import { Head, Link, router } from '@inertiajs/react';
 import { Clock, Eye, ChevronLeft, ChevronRight, TrendingUp, Flame, Tag as TagIcon, ArrowRight, BookOpen, ChevronRight as Chevron, LayoutGrid, Rows3 } from 'lucide-react';
 import { useState } from 'react';
+import React from 'react';
 import AdSlot from '@/components/ads/AdSlot';
 import PublicLayout from '@/layouts/public-layout';
 import type { Article, Category, Paginated, Tag } from '@/types';
@@ -372,11 +373,21 @@ export default function CategoryPage({ category, articles, tags = [], filters = 
                             </div>
                         ) : viewMode === 'list' ? (
                             <div className="flex flex-col gap-2.5">
-                                {articles.data.map((a) => <ArticleRow key={a.id} article={a} accent={accent} />)}
+                                {articles.data.map((a, i) => (
+                                    <React.Fragment key={a.id}>
+                                        <ArticleRow article={a} accent={accent} />
+                                        {i === 2 && <AdSlot position="between_articles" page="category" categoryId={category.id} />}
+                                    </React.Fragment>
+                                ))}
                             </div>
                         ) : (
                             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-                                {articles.data.map((a) => <ArticleGridCard key={a.id} article={a} accent={accent} />)}
+                                {articles.data.map((a, i) => (
+                                    <React.Fragment key={a.id}>
+                                        <ArticleGridCard article={a} accent={accent} />
+                                        {i === 2 && <div className="col-span-full"><AdSlot position="between_articles" page="category" categoryId={category.id} /></div>}
+                                    </React.Fragment>
+                                ))}
                             </div>
                         )}
 
@@ -386,6 +397,7 @@ export default function CategoryPage({ category, articles, tags = [], filters = 
 
                     {/* ══ SIDEBAR ══════════════════════════════════════ */}
                     <aside className="hidden w-72 shrink-0 space-y-5 lg:block">
+                        <AdSlot position="right_sidebar_top" page="category" categoryId={category.id} />
 
                         <TrendingSidebar articles={trending} accent={accent} />
 
@@ -440,6 +452,7 @@ export default function CategoryPage({ category, articles, tags = [], filters = 
                                 </div>
                             </div>
                         )}
+                        <AdSlot position="right_sidebar_bottom" page="category" categoryId={category.id} />
                     </aside>
                 </div>
             </div>

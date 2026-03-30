@@ -73,6 +73,15 @@ class Advertisement extends Model
         'daily_budget',
         'spent_amount',
         'last_served_at',
+        'display_behavior',
+        'display_config',
+        'is_closable',
+        'close_button_delay_seconds',
+        'schedule_rules',
+        'max_total_impressions',
+        'max_daily_impressions',
+        'url_patterns',
+        'exclude_rules',
     ];
 
     protected $casts = [
@@ -98,6 +107,11 @@ class Advertisement extends Model
         'start_date' => 'datetime',
         'end_date' => 'datetime',
         'last_served_at' => 'datetime',
+        'display_config' => 'array',
+        'is_closable' => 'boolean',
+        'schedule_rules' => 'array',
+        'url_patterns' => 'array',
+        'exclude_rules' => 'array',
     ];
 
     protected $appends = ['ctr'];

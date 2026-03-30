@@ -16,8 +16,8 @@ class AdSlotController extends Controller
     public function index(Request $request): JsonResponse
     {
         $request->validate([
-            'position' => ['required', 'in:header,sidebar,inline,footer,popup'],
-            'page' => ['required', 'in:home,article,category,search'],
+            'position' => ['required', 'in:header,sidebar,inline,footer,popup,below_nav,left_sidebar_top,left_sidebar_bottom,right_sidebar_top,right_sidebar_bottom,in_article,between_articles,sticky_top,sticky_bottom,floating_bottom_right,floating_bottom_left,full_screen_overlay,notification_bar'],
+            'page' => ['required', 'in:home,article,category,search,tag,page,news'],
             'category' => ['nullable', 'string'],
             'category_id' => ['nullable', 'integer'],
             'country' => ['nullable', 'string', 'size:2'],
@@ -57,6 +57,14 @@ class AdSlotController extends Controller
 
         $ads = $ads->filter(function (Advertisement $ad) use ($device, $requestedCountry, $requestedLocale, $requestedTags, $request): bool {
             if ($this->isFrequencyCapped($ad, $request)) {
+                return false;
+            }
+
+            if (! $this->passesScheduleRules($ad)) {
+                return false;
+            }
+
+            if (! $this->passesImpressionCaps($ad)) {
                 return false;
             }
 
@@ -110,6 +118,10 @@ class AdSlotController extends Controller
                 'height' => $ad->height,
                 'position' => $ad->position,
                 'video_embed_url' => $ad->video_embed_url,
+                'display_behavior' => $ad->display_behavior ?? 'standard',
+                'display_config' => $ad->display_config ?? [],
+                'is_closable' => (bool) $ad->is_closable,
+                'close_button_delay_seconds' => $ad->close_button_delay_seconds ?? 0,
             ];
         });
 
@@ -287,5 +299,72 @@ class AdSlotController extends Controller
         if ($key !== null) {
             Cache::put($key, ((int) Cache::get($key, 0)) + 1, now()->addDay());
         }
+    }
+
+    public function dismiss(Request $request, Advertisement $advertisement): JsonResponse
+    {
+        $this->logEvent($advertisement, 'dismiss');
+
+        return response()->json(['ok' => true]);
+    }
+
+    private function passesScheduleRules(Advertisement $ad): bool
+    {
+        $rules = $ad->schedule_rules;
+        if (empty($rules)) {
+            return true;
+        }
+
+        $tz = data_get($rules, 'timezone', 'UTC');
+        $now = now($tz);
+
+        $allowedDays = data_get($rules, 'days_of_week');
+        if (is_array($allowedDays) && ! empty($allowedDays) && ! in_array($now->dayOfWeek, $allowedDays, false)) {
+            return false;
+        }
+
+        $blackout = data_get($rules, 'blackout_dates', []);
+        if (is_array($blackout) && in_array($now->toDateString(), $blackout, true)) {
+            return false;
+        }
+
+        $timeSlots = data_get($rules, 'time_slots', []);
+        if (is_array($timeSlots) && ! empty($timeSlots)) {
+            $currentTime = $now->format('H:i');
+            $inSlot = false;
+            foreach ($timeSlots as $slot) {
+                $start = data_get($slot, 'start_time', '00:00');
+                $end = data_get($slot, 'end_time', '23:59');
+                if ($currentTime >= $start && $currentTime <= $end) {
+                    $inSlot = true;
+                    break;
+                }
+            }
+            if (! $inSlot) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private function passesImpressionCaps(Advertisement $ad): bool
+    {
+        if ($ad->max_total_impressions && $ad->total_impressions >= $ad->max_total_impressions) {
+            return false;
+        }
+
+        if ($ad->max_daily_impressions) {
+            $todayImpressions = (int) DB::table('ad_performance')
+                ->where('advertisement_id', $ad->id)
+                ->where('date', now()->toDateString())
+                ->value('impressions');
+
+            if ($todayImpressions >= $ad->max_daily_impressions) {
+                return false;
+            }
+        }
+
+        return true;
     }
 }

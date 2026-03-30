@@ -17,6 +17,7 @@ type Filters = {
     ad_type?: string;
     page?: string;
     position?: string;
+    display_behavior?: string;
     slot_id?: string;
     advertiser_id?: string;
     has_media?: string;
@@ -93,7 +94,7 @@ export default function AdvertisementsIndex({ ads, filters, summary, options, pr
                                     <Sparkles className="mr-1 size-3.5" /> {preset.label}
                                 </Button>
                             ))}
-                            <Button size="sm" variant="ghost" onClick={() => applyFilter({ search: undefined, status: undefined, workflow_status: undefined, ad_type: undefined, page: undefined, position: undefined, slot_id: undefined, advertiser_id: undefined, has_media: undefined, is_pinned: undefined, from_date: undefined, to_date: undefined, sort_by: undefined, sort_dir: undefined, per_page: undefined })}>Reset</Button>
+                            <Button size="sm" variant="ghost" onClick={() => applyFilter({ search: undefined, status: undefined, workflow_status: undefined, ad_type: undefined, page: undefined, position: undefined, display_behavior: undefined, slot_id: undefined, advertiser_id: undefined, has_media: undefined, is_pinned: undefined, from_date: undefined, to_date: undefined, sort_by: undefined, sort_dir: undefined, per_page: undefined })}>Reset</Button>
                         </div>
 
                         <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-6">
@@ -148,11 +149,22 @@ export default function AdvertisementsIndex({ ads, filters, summary, options, pr
                                     <option value="inline">Inline</option>
                                     <option value="footer">Footer</option>
                                     <option value="popup">Popup</option>
+                                    <option value="below_nav">Below Nav</option>
+                                    <option value="left_sidebar_top">Left Sidebar Top</option>
+                                    <option value="right_sidebar_top">Right Sidebar Top</option>
+                                    <option value="in_article">In Article</option>
+                                    <option value="between_articles">Between Articles</option>
+                                    <option value="sticky_top">Sticky Top</option>
+                                    <option value="sticky_bottom">Sticky Bottom</option>
+                                    <option value="floating_bottom_right">Floating Right</option>
+                                    <option value="floating_bottom_left">Floating Left</option>
+                                    <option value="full_screen_overlay">Fullscreen</option>
+                                    <option value="notification_bar">Notification Bar</option>
                                 </select>
                             </div>
                         </div>
 
-                        <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-6">
+                        <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-7">
                             <div className="space-y-1">
                                 <Label>Page</Label>
                                 <select className="border-input bg-background h-9 w-full rounded-md border px-2 text-sm" value={filters.page ?? ''} onChange={(e) => applyFilter({ page: e.target.value || undefined })}>
@@ -161,6 +173,20 @@ export default function AdvertisementsIndex({ ads, filters, summary, options, pr
                                     <option value="article">Article</option>
                                     <option value="category">Category</option>
                                     <option value="search">Search</option>
+                                </select>
+                            </div>
+                            <div className="space-y-1">
+                                <Label>Display Behavior</Label>
+                                <select className="border-input bg-background h-9 w-full rounded-md border px-2 text-sm" value={filters.display_behavior ?? ''} onChange={(e) => applyFilter({ display_behavior: e.target.value || undefined })}>
+                                    <option value="">All</option>
+                                    <option value="standard">Standard</option>
+                                    <option value="closable">Closable</option>
+                                    <option value="rotational">Rotational</option>
+                                    <option value="sticky">Sticky</option>
+                                    <option value="floating">Floating</option>
+                                    <option value="interstitial">Interstitial</option>
+                                    <option value="expandable">Expandable</option>
+                                    <option value="slide_in">Slide In</option>
                                 </select>
                             </div>
                             <div className="space-y-1">

@@ -231,3 +231,4 @@ require __DIR__.'/settings.php';
 Route::get('/api/ad-slots', [PublicAdSlotController::class, 'index'])->name('api.ad-slots.index');
 Route::post('/api/ad-slots/{advertisement}/impression', [PublicAdSlotController::class, 'trackImpression'])->name('api.ad-slots.impression');
 Route::post('/api/ad-slots/{advertisement}/click', [PublicAdSlotController::class, 'trackClick'])->name('api.ad-slots.click');
+Route::post('/api/ad-slots/{advertisement}/dismiss', [PublicAdSlotController::class, 'dismiss'])->name('api.ad-slots.dismiss');

@@ -48,6 +48,7 @@ class AdvertisementController extends Controller
             ->when($request->from_date, fn ($q) => $q->whereDate('start_date', '>=', $request->from_date))
             ->when($request->to_date, fn ($q) => $q->whereDate('end_date', '<=', $request->to_date))
             ->when($request->search, fn ($q) => $q->where('title', 'like', '%' . trim((string) $request->search) . '%'))
+            ->when($request->display_behavior, fn ($q) => $q->where('display_behavior', $request->display_behavior))
             ->orderBy(in_array($sortBy, $allowedSort, true) ? $sortBy : 'priority', $sortDir)
             ->orderByDesc('id')
             ->paginate($perPage)
@@ -80,6 +81,7 @@ class AdvertisementController extends Controller
                 'search',
                 'has_media',
                 'is_pinned',
+                'display_behavior',
                 'sort_by',
                 'sort_dir',
                 'per_page',
@@ -172,6 +174,15 @@ class AdvertisementController extends Controller
                 'variant_split' => $advertisement->variant_split ?? 50,
                 'winner_metric' => $advertisement->winner_metric ?? 'ctr',
                 'video_embed_url' => $advertisement->video_embed_url ?? '',
+                'display_behavior' => $advertisement->display_behavior ?? 'standard',
+                'display_config' => $advertisement->display_config ?? [],
+                'is_closable' => (bool) $advertisement->is_closable,
+                'close_button_delay_seconds' => $advertisement->close_button_delay_seconds ?? 0,
+                'schedule_rules' => $advertisement->schedule_rules ?? [],
+                'max_total_impressions' => $advertisement->max_total_impressions,
+                'max_daily_impressions' => $advertisement->max_daily_impressions,
+                'url_patterns' => $advertisement->url_patterns ?? [],
+                'exclude_rules' => $advertisement->exclude_rules ?? [],
             ],
             'advertisers' => Advertiser::query()->where('is_active', true)->orderBy('name')->get(['id', 'name', 'email', 'phone']),
             'categories' => Category::query()->active()->orderBy('name')->get(['id', 'name']),
@@ -296,7 +307,17 @@ class AdvertisementController extends Controller
             'open_in_new_tab' => ['boolean'],
             'width' => ['nullable', 'integer', 'min:1', 'max:5000'],
             'height' => ['nullable', 'integer', 'min:1', 'max:5000'],
-            'position' => ['required', Rule::in(['header', 'sidebar', 'inline', 'footer', 'popup'])],
+            'position' => ['required', Rule::in(['header', 'sidebar', 'inline', 'footer', 'popup', 'below_nav', 'left_sidebar_top', 'left_sidebar_bottom', 'right_sidebar_top', 'right_sidebar_bottom', 'in_article', 'between_articles', 'sticky_top', 'sticky_bottom', 'floating_bottom_right', 'floating_bottom_left', 'full_screen_overlay', 'notification_bar'])],
+            'display_behavior' => ['nullable', Rule::in(['standard', 'closable', 'rotational', 'sticky', 'floating', 'interstitial', 'expandable', 'slide_in'])],
+            'display_config' => ['nullable', 'array'],
+            'is_closable' => ['boolean'],
+            'close_button_delay_seconds' => ['nullable', 'integer', 'min:0', 'max:60'],
+            'schedule_rules' => ['nullable', 'array'],
+            'max_total_impressions' => ['nullable', 'integer', 'min:0'],
+            'max_daily_impressions' => ['nullable', 'integer', 'min:0'],
+            'url_patterns' => ['nullable', 'array'],
+            'url_patterns.*' => ['string', 'max:200'],
+            'exclude_rules' => ['nullable', 'array'],
             'pages' => ['nullable', 'array'],
             'pages.*' => ['string', Rule::in(['home', 'article', 'category', 'search'])],
             'category_ids' => ['nullable', 'array'],
@@ -432,6 +453,15 @@ class AdvertisementController extends Controller
                 'term' => $validated['utm_term'] ?? null,
                 'content' => $validated['utm_content'] ?? null,
             ]),
+            'display_behavior' => $validated['display_behavior'] ?? 'standard',
+            'display_config' => $validated['display_config'] ?? null,
+            'is_closable' => $request->boolean('is_closable'),
+            'close_button_delay_seconds' => $validated['close_button_delay_seconds'] ?? 0,
+            'schedule_rules' => $validated['schedule_rules'] ?? null,
+            'max_total_impressions' => $validated['max_total_impressions'] ?? null,
+            'max_daily_impressions' => $validated['max_daily_impressions'] ?? null,
+            'url_patterns' => $validated['url_patterns'] ?? null,
+            'exclude_rules' => $validated['exclude_rules'] ?? null,
         ];
     }
 
@@ -472,6 +502,8 @@ class AdvertisementController extends Controller
             'frequency_cap_value' => $ad->frequency_cap_value,
             'device_targets' => $ad->device_targets ?? [],
             'audience_tags' => $ad->audience_tags ?? [],
+            'display_behavior' => $ad->display_behavior ?? 'standard',
+            'is_closable' => (bool) $ad->is_closable,
         ];
     }
 

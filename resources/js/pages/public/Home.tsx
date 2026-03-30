@@ -1,6 +1,7 @@
 import { Head, Link, usePage } from '@inertiajs/react';
 import { Clock, Eye, ChevronLeft, ChevronRight, Flame, TrendingUp, Radio } from 'lucide-react';
 import { useState, useEffect, useCallback, useRef } from 'react';
+import React from 'react';
 import AdSlot from '@/components/ads/AdSlot';
 import PublicLayout from '@/layouts/public-layout';
 import type { Article, Category } from '@/types';
@@ -422,8 +423,11 @@ export default function Home({ featured, latest, trending, editorPicks, category
                         <section className="lg:col-span-2">
                             <SectionHeader title="Latest Stories" href="/news" />
                             <div className="grid gap-4 md:grid-cols-2">
-                                {latest.slice(0, 6).map((article) => (
-                                    <MiniCard key={article.id} article={article} color={article.categories?.[0]?.color} />
+                                {latest.slice(0, 6).map((article, index) => (
+                                    <React.Fragment key={article.id}>
+                                        <MiniCard article={article} color={article.categories?.[0]?.color} />
+                                        {index === 1 && <div className="col-span-full"><AdSlot position="between_articles" page="home" /></div>}
+                                    </React.Fragment>
                                 ))}
                             </div>
                         </section>
@@ -453,6 +457,7 @@ export default function Home({ featured, latest, trending, editorPicks, category
 
                         {/* Right sidebar */}
                         <div className="space-y-8">
+                            <AdSlot position="right_sidebar_top" page="home" />
                             <MostRead articles={trending} />
 
                             <AdSlot position="sidebar" page="home" />
@@ -478,6 +483,7 @@ export default function Home({ featured, latest, trending, editorPicks, category
                                     </div>
                                 </div>
                             )}
+                            <AdSlot position="right_sidebar_bottom" page="home" />
                         </div>
                     </div>
                 )}

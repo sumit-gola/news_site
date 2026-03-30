@@ -342,6 +342,7 @@ export default function AuthorPage({ author, stats, mostRead, authorCategories, 
 
                     {/* ══ SIDEBAR ════════════════════════════════════════ */}
                     <aside className="hidden w-72 shrink-0 space-y-5 lg:block">
+                        <AdSlot position="right_sidebar_top" page="home" />
 
                         {/* Most Read */}
                         <MostReadSidebar articles={mostRead} />
@@ -372,6 +373,7 @@ export default function AuthorPage({ author, stats, mostRead, authorCategories, 
                                 </div>
                             </div>
                         )}
+                        <AdSlot position="right_sidebar_bottom" page="home" />
 
                     </aside>
                 </div>

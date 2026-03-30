@@ -246,6 +246,8 @@ export default function ArticleShow({ article, related, trending, comments, comm
                             dangerouslySetInnerHTML={{ __html: article.content }}
                         />
 
+                        <AdSlot position="in_article" page="article" categoryId={primaryCategoryId} className="mt-6" />
+
                         <AdSlot position="inline" page="article" categoryId={primaryCategoryId} className="mt-8" />
 
                         {/* Tags */}
@@ -304,6 +306,7 @@ export default function ArticleShow({ article, related, trending, comments, comm
 
                     {/* ── Sidebar ──────────────────────────────────────────── */}
                     <aside className="space-y-8 lg:sticky lg:top-28 lg:self-start">
+                        <AdSlot position="right_sidebar_top" page="article" categoryId={primaryCategoryId} />
                         <AdSlot position="sidebar" page="article" categoryId={primaryCategoryId} sticky />
 
                         {/* Related articles */}
@@ -361,6 +364,7 @@ export default function ArticleShow({ article, related, trending, comments, comm
                         )}
 
                         <AdSlot position="footer" page="article" categoryId={primaryCategoryId} />
+                        <AdSlot position="right_sidebar_bottom" page="article" categoryId={primaryCategoryId} />
                     </aside>
                 </div>
             </div>
