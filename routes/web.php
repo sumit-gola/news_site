@@ -123,6 +123,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'verified', 'role:ad
 
     // Admin publishing shortcut
     Route::get('articles', [ArticleController::class, 'adminIndex'])->name('articles.index');
+    Route::patch('articles/bulk-action', [ArticleController::class, 'bulkAction'])->name('articles.bulk-action');
     Route::post('articles/{article}/publish', [ArticleController::class, 'publish'])->name('articles.publish');
 
     // Comment Management

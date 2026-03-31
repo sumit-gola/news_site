@@ -118,13 +118,37 @@ export default function AdminArticleIndex({
 
     const bulkDelete = () => {
         if (!window.confirm(`Delete ${selected.length} article(s) permanently?`)) return;
-        router.post('/admin/articles/bulk-delete', { ids: selected }, {
+        router.patch('/admin/articles/bulk-action', { action: 'delete', ids: selected }, {
             preserveScroll: true,
             onSuccess: () => setSelected([]),
         });
     };
     const bulkPublish = () => {
-        router.post('/admin/articles/bulk-publish', { ids: selected }, {
+        router.patch('/admin/articles/bulk-action', { action: 'publish', ids: selected }, {
+            preserveScroll: true,
+            onSuccess: () => setSelected([]),
+        });
+    };
+    const bulkApprove = () => {
+        router.patch('/admin/articles/bulk-action', { action: 'approve', ids: selected }, {
+            preserveScroll: true,
+            onSuccess: () => setSelected([]),
+        });
+    };
+    const bulkReject = () => {
+        router.patch('/admin/articles/bulk-action', { action: 'reject', ids: selected }, {
+            preserveScroll: true,
+            onSuccess: () => setSelected([]),
+        });
+    };
+    const bulkMoveToPending = () => {
+        router.patch('/admin/articles/bulk-action', { action: 'pending', ids: selected }, {
+            preserveScroll: true,
+            onSuccess: () => setSelected([]),
+        });
+    };
+    const bulkMoveToDraft = () => {
+        router.patch('/admin/articles/bulk-action', { action: 'draft', ids: selected }, {
             preserveScroll: true,
             onSuccess: () => setSelected([]),
         });
@@ -340,6 +364,27 @@ export default function AdminArticleIndex({
                                     >
                                         <Trash2 className="size-3" /> Delete
                                     </button>
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                            <button className="flex items-center gap-1 rounded px-2 py-0.5 text-[11px] font-medium text-muted-foreground hover:bg-muted transition-colors">
+                                                <MoreHorizontal className="size-3" /> More
+                                            </button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="end" className="w-44">
+                                            <DropdownMenuItem onClick={bulkApprove} className="text-xs">
+                                                <CheckCircle2 className="mr-1.5 size-3.5" /> Approve + Publish
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem onClick={bulkReject} className="text-xs">
+                                                <ThumbsDown className="mr-1.5 size-3.5" /> Reject
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem onClick={bulkMoveToPending} className="text-xs">
+                                                <Clock3 className="mr-1.5 size-3.5" /> Move to Pending
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem onClick={bulkMoveToDraft} className="text-xs">
+                                                <FileText className="mr-1.5 size-3.5" /> Move to Draft
+                                            </DropdownMenuItem>
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
                                     <button
                                         onClick={() => setSelected([])}
                                         className="text-muted-foreground hover:text-foreground ml-0.5 transition-colors"

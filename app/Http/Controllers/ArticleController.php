@@ -448,6 +448,86 @@ class ArticleController extends Controller
     }
 
     /**
+     * Apply bulk action on admin article listing.
+     */
+    public function bulkAction(Request $request)
+    {
+        $validated = $request->validate([
+            'action' => ['required', Rule::in(['publish', 'approve', 'reject', 'pending', 'draft', 'delete'])],
+            'ids' => ['required', 'array', 'min:1'],
+            'ids.*' => ['integer', 'exists:articles,id'],
+        ]);
+
+        /** @var User $user */
+        $user = $request->user();
+        $action = $validated['action'];
+        $articles = Article::query()->whereIn('id', $validated['ids'])->get();
+        $count = 0;
+
+        foreach ($articles as $article) {
+            switch ($action) {
+                case 'publish':
+                case 'approve':
+                    $article->update([
+                        'status' => 'published',
+                        'approved_by' => $user->id,
+                        'published_at' => now(),
+                    ]);
+                    ActivityLog::record('published', 'bulk published', $article, ['bulk' => true]);
+                    $count++;
+                    break;
+
+                case 'reject':
+                    $article->update([
+                        'status' => 'rejected',
+                        'approved_by' => null,
+                        'published_at' => null,
+                    ]);
+                    ActivityLog::record('rejected', 'bulk rejected', $article, ['bulk' => true]);
+                    $count++;
+                    break;
+
+                case 'pending':
+                    $article->update([
+                        'status' => 'pending',
+                        'approved_by' => null,
+                        'published_at' => null,
+                    ]);
+                    ActivityLog::record('submitted for review', 'bulk moved to pending', $article, ['bulk' => true]);
+                    $count++;
+                    break;
+
+                case 'draft':
+                    $article->update([
+                        'status' => 'draft',
+                        'approved_by' => null,
+                        'published_at' => null,
+                    ]);
+                    ActivityLog::record('updated', 'bulk moved to draft', $article, ['bulk' => true]);
+                    $count++;
+                    break;
+
+                case 'delete':
+                    $article->delete();
+                    ActivityLog::record('deleted', 'bulk deleted', $article, ['bulk' => true]);
+                    $count++;
+                    break;
+            }
+        }
+
+        $messages = [
+            'publish' => "{$count} article(s) published.",
+            'approve' => "{$count} article(s) approved and published.",
+            'reject' => "{$count} article(s) rejected.",
+            'pending' => "{$count} article(s) moved to pending review.",
+            'draft' => "{$count} article(s) moved to draft.",
+            'delete' => "{$count} article(s) deleted.",
+        ];
+
+        return back()->with('success', $messages[$action] ?? 'Bulk action completed.');
+    }
+
+    /**
      * Build the persisted article payload from validated form input.
      */
     private function buildArticlePayload(array $validated, ?Article $article = null): array
@@ -486,9 +566,19 @@ class ArticleController extends Controller
      */
     private function buildMetaPayload(array $validated): array
     {
+        $metaTitle = $this->normalizeOptionalValue($validated['meta_title'] ?? null);
+        if ($metaTitle === null) {
+            $metaTitle = Str::limit(trim($validated['title']), 60, '');
+        }
+
+        $metaDescription = $this->normalizeOptionalValue($validated['meta_description'] ?? null);
+        if ($metaDescription === null) {
+            $metaDescription = Str::limit(trim($validated['excerpt']), 160, '');
+        }
+
         return [
-            'meta_title'       => $this->normalizeOptionalValue($validated['meta_title'] ?? $validated['title']),
-            'meta_description' => $this->normalizeOptionalValue($validated['meta_description'] ?? $validated['excerpt']),
+            'meta_title'       => $metaTitle,
+            'meta_description' => $metaDescription,
             'meta_keywords'    => $this->normalizeOptionalValue($validated['meta_keywords'] ?? null),
             'og_image'         => $this->normalizeOptionalValue($validated['og_image'] ?? ($validated['featured_image'] ?? null)),
             'canonical_url'    => $this->normalizeOptionalValue($validated['canonical_url'] ?? null),
