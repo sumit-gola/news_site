@@ -1,53 +1,21 @@
 import { Link, usePage } from '@inertiajs/react';
 import { Newspaper, Home, List, Search, UserCircle } from 'lucide-react';
 import { type ReactNode } from 'react';
-import AdSlot from '@/components/ads/AdSlot';
-import type { AdPage, Auth, Category } from '@/types';
+import type { Auth, Category } from '@/types';
 import PublicHeader from '@/components/public/PublicHeader';
 
 interface Props {
     children: ReactNode;
 }
 
-/** Derive the ad page type from the current URL path. */
-function useAdPage(): AdPage {
-    const { url } = usePage();
-    if (url === '/' || url.startsWith('/?')) return 'home';
-    if (url.startsWith('/news/') || url.startsWith('/article')) return 'article';
-    if (url.startsWith('/category')) return 'category';
-    if (url.startsWith('/search')) return 'search';
-    if (url.startsWith('/tag')) return 'tag';
-    if (url.startsWith('/news')) return 'news';
-    if (url.startsWith('/page') || url.startsWith('/about') || url.startsWith('/contact') || url.startsWith('/privacy')) return 'page';
-    return 'home';
-}
-
 export default function PublicLayout({ children }: Props) {
     const { auth, navCategories } = usePage<{ auth: Auth; navCategories: Category[] }>().props;
     const categories: Category[] = navCategories ?? [];
-    const adPage = useAdPage();
 
     return (
         <div className="min-h-screen bg-white text-gray-900 dark:bg-gray-950 dark:text-gray-100">
             {/* ── Header ───────────────────────────────────────────────────── */}
             <PublicHeader navCategories={categories} />
-
-            {/* ── Below Nav Ad ─────────────────────────────────────────────── */}
-            <AdSlot position="below_nav" page={adPage} className="mx-auto max-w-7xl px-4 py-2" />
-
-            {/* ── Sticky Top Ad ────────────────────────────────────────────── */}
-            <div className="sticky top-0 z-40">
-                <AdSlot position="sticky_top" page={adPage} className="mx-auto max-w-7xl" />
-            </div>
-
-            {/* ── Notification Bar Ad ──────────────────────────────────────── */}
-            <AdSlot position="notification_bar" page={adPage} className="mx-auto max-w-7xl px-4" />
-
-            {/* ── Left Sidebar Ads (fixed left) ─────────────────────────── */}
-            <div className="fixed left-0 top-1/4 z-30 hidden w-40 space-y-4 xl:block">
-                <AdSlot position="left_sidebar_top" page={adPage} />
-                <AdSlot position="left_sidebar_bottom" page={adPage} />
-            </div>
 
             {/* ── Page Content ─────────────────────────────────────────────── */}
             <main>{children}</main>
@@ -106,15 +74,6 @@ export default function PublicLayout({ children }: Props) {
                     </div>
                 </div>
             </footer>
-
-            {/* ── Floating / Overlay / Sticky-Bottom Ads ──────────────────── */}
-            <AdSlot position="floating_bottom_right" page={adPage} />
-            <AdSlot position="floating_bottom_left" page={adPage} />
-            <AdSlot position="popup" page={adPage} />
-            <AdSlot position="full_screen_overlay" page={adPage} />
-            <div className="fixed inset-x-0 bottom-14 z-30 md:bottom-0">
-                <AdSlot position="sticky_bottom" page={adPage} className="mx-auto max-w-7xl" />
-            </div>
 
             <nav className="fixed bottom-0 left-0 right-0 z-40 border-t border-gray-200 bg-white/95 backdrop-blur md:hidden dark:border-gray-800 dark:bg-gray-900/95">
                 <div className="mx-auto grid max-w-md grid-cols-4">

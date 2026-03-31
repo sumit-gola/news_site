@@ -2,7 +2,6 @@ import { Head, Link, router } from '@inertiajs/react';
 import { Search, Filter, X, Clock, Eye, TrendingUp, Flame, ChevronLeft, ChevronRight, SlidersHorizontal } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import React from 'react';
-import AdSlot from '@/components/ads/AdSlot';
 import PublicLayout from '@/layouts/public-layout';
 import type { Article, Category, Paginated, Tag } from '@/types';
 
@@ -213,7 +212,6 @@ export default function NewsIndex({ articles, filters = {} as Filters, categorie
         <PublicLayout>
             <Head title="Latest News" />
 
-            <AdSlot position="header" page="news" className="mx-auto max-w-7xl px-4 pt-4" />
 
             {/* ── Page header ─────────────────────────────────── */}
             <div className="border-b border-gray-100 bg-gradient-to-br from-gray-50 to-white dark:border-gray-800 dark:from-gray-950 dark:to-gray-900">
@@ -371,7 +369,6 @@ export default function NewsIndex({ articles, filters = {} as Filters, categorie
                                 {articles.data.map((a, i) => (
                                     <React.Fragment key={a.id}>
                                         <ArticleRow article={a} />
-                                        {i === 2 && <AdSlot position="between_articles" page="news" />}
                                     </React.Fragment>
                                 ))}
                             </div>
@@ -382,8 +379,6 @@ export default function NewsIndex({ articles, filters = {} as Filters, categorie
 
                     {/* ══ SIDEBAR ══════════════════════════════════════ */}
                     <aside className="hidden w-64 shrink-0 space-y-5 lg:block lg:sticky lg:top-6 lg:self-start">
-                        <AdSlot position="right_sidebar_top" page="news" className="mb-4" />
-                        <AdSlot position="sidebar" page="news" className="mb-4" />
                         <TrendingSidebar categories={categories} />
 
                         {/* Popular tags */}
@@ -406,11 +401,9 @@ export default function NewsIndex({ articles, filters = {} as Filters, categorie
                                 </div>
                             </div>
                         )}
-                        <AdSlot position="right_sidebar_bottom" page="news" />
                     </aside>
                 </div>
 
-                <AdSlot position="footer" page="news" className="mt-8" />
             </div>
         </PublicLayout>
     );

@@ -2,7 +2,6 @@ import { Head, Link, usePage } from '@inertiajs/react';
 import { Clock, Eye, ChevronLeft, ChevronRight, Flame, TrendingUp, Radio } from 'lucide-react';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import React from 'react';
-import AdSlot from '@/components/ads/AdSlot';
 import PublicLayout from '@/layouts/public-layout';
 import type { Article, Category } from '@/types';
 
@@ -399,7 +398,6 @@ export default function Home({ featured, latest, trending, editorPicks, category
             {trending.length > 0 && <BreakingTicker articles={trending.slice(0, 6)} />}
 
             <div className="mx-auto max-w-7xl px-4 py-6">
-                <AdSlot position="header" page="home" className="mb-6" />
 
                 {/* Hero + Latest sidebar */}
                 <div className="grid gap-6 lg:grid-cols-3">
@@ -426,7 +424,6 @@ export default function Home({ featured, latest, trending, editorPicks, category
                                 {latest.slice(0, 6).map((article, index) => (
                                     <React.Fragment key={article.id}>
                                         <MiniCard article={article} color={article.categories?.[0]?.color} />
-                                        {index === 1 && <div className="col-span-full"><AdSlot position="between_articles" page="home" /></div>}
                                     </React.Fragment>
                                 ))}
                             </div>
@@ -443,7 +440,6 @@ export default function Home({ featured, latest, trending, editorPicks, category
                     </div>
                 )}
 
-                <AdSlot position="inline" page="home" className="mt-10" />
 
                 {/* Category sections + Most Read sidebar */}
                 {categoryGroups.length > 0 && (
@@ -457,10 +453,8 @@ export default function Home({ featured, latest, trending, editorPicks, category
 
                         {/* Right sidebar */}
                         <div className="space-y-8">
-                            <AdSlot position="right_sidebar_top" page="home" />
                             <MostRead articles={trending} />
 
-                            <AdSlot position="sidebar" page="home" />
 
                             {/* Category browser */}
                             {navCategories.length > 0 && (
@@ -483,7 +477,6 @@ export default function Home({ featured, latest, trending, editorPicks, category
                                     </div>
                                 </div>
                             )}
-                            <AdSlot position="right_sidebar_bottom" page="home" />
                         </div>
                     </div>
                 )}
@@ -523,7 +516,6 @@ export default function Home({ featured, latest, trending, editorPicks, category
                     )}
                 </section>
 
-                <AdSlot position="footer" page="home" className="mt-10" />
             </div>
         </PublicLayout>
     );

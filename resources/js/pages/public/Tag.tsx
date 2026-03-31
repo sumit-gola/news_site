@@ -1,6 +1,5 @@
 import { Head, Link, router } from '@inertiajs/react';
 import React from 'react';
-import AdSlot from '@/components/ads/AdSlot';
 import PublicLayout from '@/layouts/public-layout';
 import type { Article, Paginated, Tag } from '@/types';
 
@@ -29,7 +28,6 @@ export default function TagPage({ tag, articles, filters = {} }: Props) {
             </Head>
 
             <div className="mx-auto max-w-6xl px-4 py-8">
-                <AdSlot position="header" page="tag" className="mb-6" />
 
                 <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
                     <div>
@@ -57,7 +55,6 @@ export default function TagPage({ tag, articles, filters = {} }: Props) {
                     <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
                         {articles.data.map((article, index) => (
                             <React.Fragment key={article.id}>
-                            {index === 3 && <div className="col-span-full"><AdSlot position="between_articles" page="tag" /></div>}
                             <article className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-gray-900">
                                 <Link href={`/news/${article.slug}`} className="block overflow-hidden rounded-lg">
                                     {article.featured_image_url ? (
@@ -79,7 +76,6 @@ export default function TagPage({ tag, articles, filters = {} }: Props) {
                     </div>
                 )}
 
-                <AdSlot position="inline" page="tag" className="my-6" />
 
                 <div className="mt-8 flex flex-wrap gap-2">
                     {articles.links.map((link, idx) => (
@@ -92,7 +88,6 @@ export default function TagPage({ tag, articles, filters = {} }: Props) {
                     ))}
                 </div>
 
-                <AdSlot position="footer" page="tag" className="mt-8" />
             </div>
         </PublicLayout>
     );

@@ -2,7 +2,6 @@ import { Head, Link } from '@inertiajs/react';
 import {
     Activity,
     AlertCircle,
-    BarChart3,
     BookOpen,
     CheckCircle2,
     Clock,
@@ -10,7 +9,6 @@ import {
     FileText,
     FolderOpen,
     MessageSquare,
-    Megaphone,
     Tag,
     TrendingUp,
     Users,
@@ -38,8 +36,6 @@ interface Props {
         comments: { total: number; pending: number };
         categories: { total: number; active: number };
         tags: number;
-        active_ads: number;
-        total_ads: number;
     };
     recentArticles: {
         id: number; title: string; slug: string; status: string;
@@ -186,8 +182,6 @@ export default function Dashboard({ stats, recentArticles, pendingReview, recent
         { label: 'Users',          href: '/admin/users',                        icon: Users,         bar: 'bg-blue-500' },
         { label: 'Categories',     href: '/categories',                         icon: FolderOpen,    bar: 'bg-teal-500' },
         { label: 'Comments',       href: '/admin/comments',                     icon: MessageSquare, bar: 'bg-amber-500' },
-        { label: 'Ads',            href: '/admin/advertisements',               icon: Megaphone,     bar: 'bg-rose-500' },
-        { label: 'Ad Analytics',   href: '/admin/advertisements/analytics',     icon: BarChart3,     bar: 'bg-indigo-500' },
     ];
 
     return (
@@ -218,7 +212,7 @@ export default function Dashboard({ stats, recentArticles, pendingReview, recent
                 <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
                     <Tile label="Categories"   value={stats.categories.total}  sub={`${stats.categories.active} active`}  icon={FolderOpen} bar="bg-teal-500"   href="/categories" />
                     <Tile label="Tags"         value={stats.tags}                                                         icon={Tag}        bar="bg-cyan-500" />
-                    <Tile label="Active Ads"   value={stats.active_ads}        sub={`${stats.total_ads} total`}           icon={Megaphone}  bar="bg-orange-500" href="/admin/advertisements" />
+                    <Tile label="Published"    value={stats.articles.published} sub="Live articles"                       icon={Activity}   bar="bg-emerald-500" href="/articles" />
                     <Tile label="Drafts"       value={stats.articles.draft}    sub="Unpublished"                          icon={BookOpen}   bar="bg-slate-400"  href="/articles" />
                 </div>
 

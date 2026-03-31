@@ -1,6 +1,5 @@
 import { Head, Link, router } from '@inertiajs/react';
 import { Clock, Eye, BookOpen, TrendingUp, Calendar, ChevronLeft, ChevronRight, Newspaper, BookMarked } from 'lucide-react';
-import AdSlot from '@/components/ads/AdSlot';
 import PublicLayout from '@/layouts/public-layout';
 import type { Article, Paginated } from '@/types';
 
@@ -342,12 +341,10 @@ export default function AuthorPage({ author, stats, mostRead, authorCategories, 
 
                     {/* ══ SIDEBAR ════════════════════════════════════════ */}
                     <aside className="hidden w-72 shrink-0 space-y-5 lg:block">
-                        <AdSlot position="right_sidebar_top" page="home" />
 
                         {/* Most Read */}
                         <MostReadSidebar articles={mostRead} />
 
-                        <AdSlot position="sidebar" page="home" />
 
                         {/* Categories this author writes in */}
                         {authorCategories.length > 0 && (
@@ -373,7 +370,6 @@ export default function AuthorPage({ author, stats, mostRead, authorCategories, 
                                 </div>
                             </div>
                         )}
-                        <AdSlot position="right_sidebar_bottom" page="home" />
 
                     </aside>
                 </div>

@@ -1,7 +1,6 @@
 import { Head, Link, usePage } from '@inertiajs/react';
 import { Clock, Eye, Calendar, User, Tag, Share2, Link2, ArrowLeft } from 'lucide-react';
 import { useState } from 'react';
-import AdSlot from '@/components/ads/AdSlot';
 import CommentSection, { type CommentItem } from '@/components/comments/CommentSection';
 import PublicLayout from '@/layouts/public-layout';
 import type { Article, Category } from '@/types';
@@ -246,9 +245,7 @@ export default function ArticleShow({ article, related, trending, comments, comm
                             dangerouslySetInnerHTML={{ __html: article.content }}
                         />
 
-                        <AdSlot position="in_article" page="article" categoryId={primaryCategoryId} className="mt-6" />
 
-                        <AdSlot position="inline" page="article" categoryId={primaryCategoryId} className="mt-8" />
 
                         {/* Tags */}
                         {article.tags && article.tags.length > 0 && (
@@ -306,8 +303,6 @@ export default function ArticleShow({ article, related, trending, comments, comm
 
                     {/* ── Sidebar ──────────────────────────────────────────── */}
                     <aside className="space-y-8 lg:sticky lg:top-28 lg:self-start">
-                        <AdSlot position="right_sidebar_top" page="article" categoryId={primaryCategoryId} />
-                        <AdSlot position="sidebar" page="article" categoryId={primaryCategoryId} sticky />
 
                         {/* Related articles */}
                         {related.length > 0 && (
@@ -363,8 +358,6 @@ export default function ArticleShow({ article, related, trending, comments, comm
                             </div>
                         )}
 
-                        <AdSlot position="footer" page="article" categoryId={primaryCategoryId} />
-                        <AdSlot position="right_sidebar_bottom" page="article" categoryId={primaryCategoryId} />
                     </aside>
                 </div>
             </div>

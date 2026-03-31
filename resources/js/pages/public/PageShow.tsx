@@ -2,7 +2,6 @@ import { Head, Link, usePage } from '@inertiajs/react';
 import { ArrowLeft, Calendar, Eye, Facebook, Link2, Share2, Twitter } from 'lucide-react';
 import { useState } from 'react';
 
-import AdSlot from '@/components/ads/AdSlot';
 import PublicLayout from '@/layouts/public-layout';
 import type { Category, Page } from '@/types';
 
@@ -94,7 +93,6 @@ export default function PageShow({ page, related }: Props) {
             )}
 
             <div className="mx-auto max-w-7xl px-4 py-8">
-                <AdSlot position="header" page="page" className="mb-6" />
 
                 <div className={`grid gap-10 ${related.length > 0 || navCategories.length > 0 ? 'lg:grid-cols-3' : ''}`}>
 
@@ -176,7 +174,6 @@ export default function PageShow({ page, related }: Props) {
                             <ArrowLeft className="size-4" /> Back to Home
                         </Link>
 
-                        <AdSlot position="inline" page="page" className="mt-8" />
                     </article>
 
                     {/* ── Sidebar ── */}

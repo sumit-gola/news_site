@@ -1,19 +1,15 @@
 import { Link, usePage } from '@inertiajs/react';
 import {
-    BarChart3,
     BookOpen,
     ChevronDown,
     FileText,
     FolderGit2,
     HardDrive,
-    ImagePlus,
     LayoutDashboard,
     LayoutGrid,
     List,
-    Megaphone,
     MessageSquare,
     Newspaper,
-    PanelsTopLeft,
     PenSquare,
     Settings,
     Shield,
@@ -35,7 +31,6 @@ import {
     SidebarFooter,
     SidebarHeader,
     SidebarMenu,
-    SidebarMenuBadge,
     SidebarMenuButton,
     SidebarMenuItem,
     SidebarMenuSub,
@@ -62,10 +57,9 @@ const footerNavItems: NavItem[] = [
 ];
 
 export function AppSidebar() {
-    const { auth, ads, comments } = usePage<{ auth: Auth; ads?: { activeCount?: number }; comments?: { pendingCount?: number } }>().props;
+    const { auth, comments } = usePage<{ auth: Auth; comments?: { pendingCount?: number } }>().props;
     const user = auth?.user;
     const roles = user?.roles?.map((r) => r.name) ?? [];
-    const activeAdsCount    = ads?.activeCount ?? 0;
     const pendingCommentsCount = comments?.pendingCount ?? 0;
 
     const isAdmin    = roles.includes('admin');
@@ -113,7 +107,7 @@ export function AppSidebar() {
                 {isAdmin && (
                     <>
                         <SidebarSeparator className="my-1 opacity-40" />
-                        <AdminNav activeAdsCount={activeAdsCount} pendingCommentsCount={pendingCommentsCount} />
+                        <AdminNav pendingCommentsCount={pendingCommentsCount} />
                     </>
                 )}
 
@@ -174,12 +168,9 @@ function CountBadge({ count, color = 'red' }: { count: number; color?: string })
 }
 
 /* ── Admin Nav ──────────────────────────────────────────────── */
-function AdminNav({ activeAdsCount, pendingCommentsCount }: { activeAdsCount: number; pendingCommentsCount: number }) {
+function AdminNav({ pendingCommentsCount }: { pendingCommentsCount: number }) {
     const { url } = usePage();
 
-    const [adsOpen, setAdsOpen] = React.useState(
-        url.startsWith('/admin/advertisements') || url.startsWith('/admin/advertisers') || url.startsWith('/admin/ad-slots')
-    );
     const [commentsOpen, setCommentsOpen] = React.useState(url.startsWith('/admin/comments'));
 
     const items = [
@@ -214,48 +205,6 @@ function AdminNav({ activeAdsCount, pendingCommentsCount }: { activeAdsCount: nu
                         </SidebarMenuButton>
                     </SidebarMenuItem>
                 ))}
-
-                {/* Advertisements collapsible */}
-                <Collapsible open={adsOpen} onOpenChange={setAdsOpen} asChild>
-                    <SidebarMenuItem>
-                        <CollapsibleTrigger asChild>
-                            <SidebarMenuButton
-                                isActive={adsOpen}
-                                tooltip={{ children: 'Advertisements' }}
-                                className="group/item h-8 transition-all duration-150 data-[active=true]:bg-red-50 data-[active=true]:text-red-600 data-[active=true]:font-medium dark:data-[active=true]:bg-red-950/40 dark:data-[active=true]:text-red-400"
-                            >
-                                <Megaphone className="size-4 transition-transform duration-150 group-hover/item:scale-110" />
-                                <span className="text-sm">Advertisements</span>
-                                {activeAdsCount > 0 && <CountBadge count={activeAdsCount} color="amber" />}
-                                <ChevronDown className={`ml-1 size-3 shrink-0 opacity-60 transition-transform duration-200 ${adsOpen ? 'rotate-180' : ''}`} />
-                            </SidebarMenuButton>
-                        </CollapsibleTrigger>
-                        <CollapsibleContent>
-                            <SidebarMenuSub className="border-l-2 border-red-200/60 dark:border-red-800/40 ml-3 pl-2">
-                                {[
-                                    { href: '/admin/advertisements',             icon: Newspaper,     label: 'All Ads'     },
-                                    { href: '/admin/advertisements/create',      icon: ImagePlus,     label: 'Add New Ad'  },
-                                    { href: '/admin/advertisers',                icon: Users,         label: 'Clients'     },
-                                    { href: '/admin/ad-slots',                   icon: PanelsTopLeft, label: 'Ad Slots'    },
-                                    { href: '/admin/advertisements/analytics',   icon: BarChart3,     label: 'Analytics'   },
-                                ].map(({ href, icon: Icon, label }) => (
-                                    <SidebarMenuSubItem key={href}>
-                                        <SidebarMenuSubButton
-                                            asChild
-                                            isActive={url === href || (href !== '/admin/advertisements/create' && url.startsWith(href))}
-                                            className="h-7 text-xs transition-all duration-150 data-[active=true]:text-red-600 dark:data-[active=true]:text-red-400"
-                                        >
-                                            <Link href={href} prefetch>
-                                                <Icon className="size-3.5" />
-                                                <span>{label}</span>
-                                            </Link>
-                                        </SidebarMenuSubButton>
-                                    </SidebarMenuSubItem>
-                                ))}
-                            </SidebarMenuSub>
-                        </CollapsibleContent>
-                    </SidebarMenuItem>
-                </Collapsible>
 
                 {/* Comments collapsible */}
                 <Collapsible open={commentsOpen} onOpenChange={setCommentsOpen} asChild>

@@ -2,7 +2,6 @@
 
 namespace App\Http\Middleware;
 
-use App\Models\Advertisement;
 use App\Models\Category;
 use App\Models\Comment;
 use Illuminate\Http\Request;
@@ -56,24 +55,12 @@ class HandleInertiaRequests extends Middleware
                 'success' => fn () => $request->session()->get('success'),
                 'error'   => fn () => $request->session()->get('error'),
             ],
-            'ads' => [
-                'activeCount' => fn () => $this->activeAdCount(),
-            ],
             'comments' => [
                 'pendingCount' => fn () => $this->pendingCommentCount(),
             ],
             'navCategories' => fn () => $this->navCategories(),
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
         ];
-    }
-
-    private function activeAdCount(): int
-    {
-        if (!Schema::hasTable('advertisements')) {
-            return 0;
-        }
-
-        return Advertisement::query()->active()->count();
     }
 
     private function pendingCommentCount(): int
