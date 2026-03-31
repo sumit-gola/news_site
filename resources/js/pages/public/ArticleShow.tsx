@@ -197,11 +197,6 @@ export default function ArticleShow({ article, related, trending, comments, comm
                             {article.title}
                         </h1>
 
-                        {/* Excerpt */}
-                        {article.excerpt && (
-                            <p className="mt-3 text-lg text-gray-600 dark:text-gray-400">{article.excerpt}</p>
-                        )}
-
                         {/* Meta */}
                         <div className="mt-4 flex flex-wrap items-center gap-4 border-b border-gray-200 pb-4 text-sm text-gray-500 dark:border-gray-700 dark:text-gray-400">
                             {article.author && (
