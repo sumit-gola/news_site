@@ -119,17 +119,28 @@ class ArticleController extends Controller
             'rejected'  => (clone $query)->where('status', 'rejected')->count(),
         ];
 
+        $perPage = in_array((int) $request->per_page, [10, 20, 50, 100]) ? (int) $request->per_page : 20;
+
+        $sortMap = [
+            'updated_at_desc'   => ['updated_at', 'desc'],
+            'updated_at_asc'    => ['updated_at', 'asc'],
+            'published_at_desc' => ['published_at', 'desc'],
+            'views_desc'        => ['views', 'desc'],
+            'title_asc'         => ['title', 'asc'],
+        ];
+        [$sortCol, $sortDir] = $sortMap[$request->sort ?? ''] ?? ['updated_at', 'desc'];
+
         $articles = $query
             ->with(['author', 'meta', 'categories', 'tags'])
             ->when($request->status, fn ($builder) => $builder->where('status', $request->status))
-            ->latest('updated_at')
-            ->paginate(20)
+            ->orderBy($sortCol, $sortDir)
+            ->paginate($perPage)
             ->withQueryString()
             ->through(fn (Article $article) => $this->serializeArticleForManagement($article, $user));
 
         return Inertia::render('admin/articles/index', [
             'articles'   => $articles,
-            'filters'    => $request->only(['search', 'status', 'author_id', 'category_id', 'tag_id', 'from_date', 'to_date']),
+            'filters'    => $request->only(['search', 'status', 'author_id', 'category_id', 'tag_id', 'from_date', 'to_date', 'sort', 'per_page']),
             'statuses'   => ['draft', 'pending', 'published', 'rejected'],
             'summary'    => $summary,
             'authors'    => User::orderBy('name')->get(['id', 'name']),
