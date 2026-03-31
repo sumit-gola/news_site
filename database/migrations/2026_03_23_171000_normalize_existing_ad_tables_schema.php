@@ -121,11 +121,11 @@ return new class extends Migration {
             }
 
             if (Schema::hasColumn('advertisements', 'custom_width') && Schema::hasColumn('advertisements', 'width')) {
-                DB::statement("UPDATE advertisements SET width = COALESCE(width, CAST(custom_width AS INTEGER)) WHERE custom_width IS NOT NULL AND custom_width != ''");
+                DB::statement("UPDATE advertisements SET width = COALESCE(width, CAST(custom_width AS UNSIGNED)) WHERE custom_width IS NOT NULL AND custom_width != ''");
             }
 
             if (Schema::hasColumn('advertisements', 'custom_height') && Schema::hasColumn('advertisements', 'height')) {
-                DB::statement("UPDATE advertisements SET height = COALESCE(height, CAST(custom_height AS INTEGER)) WHERE custom_height IS NOT NULL AND custom_height != ''");
+                DB::statement("UPDATE advertisements SET height = COALESCE(height, CAST(custom_height AS UNSIGNED)) WHERE custom_height IS NOT NULL AND custom_height != ''");
             }
         }
 

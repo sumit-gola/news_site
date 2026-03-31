@@ -13,6 +13,10 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (! Schema::hasTable('pages')) {
+            return;
+        }
+
         Schema::table('pages', function (Blueprint $table) {
             if (! Schema::hasColumn('pages', 'category_id')) {
                 $table->foreignId('category_id')->nullable()->after('user_id')->constrained()->nullOnDelete();
@@ -30,7 +34,7 @@ return new class extends Migration
                 $table->unsignedBigInteger('views')->default(0)->after('noindex');
             }
             if (! Schema::hasColumn('pages', 'canonical_url')) {
-                $table->string('canonical_url')->nullable()->after('og_image');
+                $table->string('canonical_url')->nullable();
             }
         });
     }

@@ -27,7 +27,7 @@ return new class extends Migration {
 
             $table->unsignedInteger('width')->nullable();
             $table->unsignedInteger('height')->nullable();
-            $table->enum('position', ['header', 'sidebar', 'inline', 'footer', 'popup'])->default('sidebar');
+            $table->string('position')->default('sidebar');
 
             $table->json('pages')->nullable();
             $table->json('category_ids')->nullable();

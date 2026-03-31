@@ -51,14 +51,14 @@ class AdSlotSeeder extends Seeder
         foreach ($slots as $slot) {
             AdSlot::query()->updateOrCreate(
                 ['slug' => $slot['slug']],
-                array_merge($slot, [
-                    'page' => null,
-                    'location' => $slot['position'],
-                    'device_type' => 'all',
-                    'max_ads' => 1,
-                    'status' => 'active',
-                    'is_active' => true,
-                ]),
+                [
+                    'name'          => $slot['name'],
+                    'position'      => $slot['position'],
+                    'page'          => null,
+                    'allowed_sizes' => $slot['allowed_sizes'],
+                    'description'   => $slot['description'],
+                    'is_active'     => true,
+                ],
             );
         }
 

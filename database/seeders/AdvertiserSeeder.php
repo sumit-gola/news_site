@@ -4,7 +4,6 @@ namespace Database\Seeders;
 
 use App\Models\Advertiser;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Str;
 
 class AdvertiserSeeder extends Seeder
 {
@@ -64,7 +63,13 @@ class AdvertiserSeeder extends Seeder
         foreach ($advertisers as $advertiser) {
             Advertiser::query()->updateOrCreate(
                 ['email' => $advertiser['email']],
-                $advertiser + ['slug' => Str::slug($advertiser['name'])],
+                [
+                    'name'         => $advertiser['name'],
+                    'phone'        => $advertiser['phone'],
+                    'company_name' => $advertiser['company_name'],
+                    'notes'        => $advertiser['notes'],
+                    'is_active'    => $advertiser['is_active'],
+                ],
             );
         }
 

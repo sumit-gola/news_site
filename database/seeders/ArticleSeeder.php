@@ -59,7 +59,7 @@ class ArticleSeeder extends Seeder
                 ['article_id' => $article->id],
                 [
                     'meta_title' => Str::limit($title, 60, ''),
-                    'meta_description' => fake()->sentence(22),
+                    'meta_description' => Str::limit(fake()->sentence(22), 155, ''),
                     'meta_keywords' => implode(', ', fake()->words(6)),
                     'og_image' => null,
                     'canonical_url' => null,
