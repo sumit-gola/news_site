@@ -1,5 +1,5 @@
 import { Link, usePage } from '@inertiajs/react';
-import { Newspaper, Home, List, Search, UserCircle } from 'lucide-react';
+import { Home, List, Search, UserCircle } from 'lucide-react';
 import { type ReactNode } from 'react';
 import type { Auth, Category } from '@/types';
 import PublicHeader from '@/components/public/PublicHeader';
@@ -25,13 +25,8 @@ export default function PublicLayout({ children }: Props) {
                 <div className="mx-auto max-w-7xl px-4 py-10">
                     <div className="grid gap-8 md:grid-cols-3">
                         <div>
-                            <div className="mb-3 flex items-center gap-2">
-                                <div className="flex size-7 items-center justify-center rounded bg-red-600">
-                                    <Newspaper className="size-3.5 text-white" />
-                                </div>
-                                <span className="font-black text-white">
-                                    NEWS<span className="text-red-500">PORTAL</span>
-                                </span>
+                            <div className="mb-3">
+                                <img src="/logo5.png" alt="logo" className="h-12 w-auto object-contain" />
                             </div>
                             <p className="text-sm leading-relaxed">
                                 Your trusted source for the latest news, breaking stories, and in-depth reporting.

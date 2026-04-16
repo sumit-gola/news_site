@@ -7,7 +7,6 @@ import {
     Menu,
     Monitor,
     Moon,
-    Newspaper,
     Search,
     Sun,
     TrendingUp,
@@ -292,15 +291,8 @@ export default function PublicHeader({ navCategories }: Props) {
                 {/* ── Primary Row: Logo + Search + Actions ─────────────── */}
                 <div className="mx-auto flex h-14 max-w-7xl items-center justify-between gap-4 px-4">
                     {/* Logo */}
-                    <Link href="/" className="flex shrink-0 items-center gap-2.5">
-                        <div className="flex size-9 items-center justify-center rounded-lg bg-red-600 shadow-sm">
-                            <Newspaper className="size-5 text-white" />
-                        </div>
-                        <div className="flex flex-col leading-none">
-                            <span className="text-xl font-black tracking-tight">
-                                NEWS<span className="text-red-600">PORTAL</span>
-                            </span>
-                        </div>
+                    <Link href="/" className="flex shrink-0 items-center">
+                        <img src="/logo5.png" alt="logo" className="h-14 w-auto object-contain" />
                     </Link>
 
                     {/* Desktop Search Bar (center) */}
@@ -455,13 +447,8 @@ export default function PublicHeader({ navCategories }: Props) {
                 <SheetContent side="left" className="w-80 overflow-y-auto p-0">
                     <SheetHeader className="border-b border-gray-100 px-5 py-4 dark:border-gray-800">
                         <SheetTitle>
-                            <Link href="/" className="flex items-center gap-2" onClick={() => setMobileOpen(false)}>
-                                <div className="flex size-8 items-center justify-center rounded-lg bg-red-600">
-                                    <Newspaper className="size-4 text-white" />
-                                </div>
-                                <span className="text-lg font-black tracking-tight">
-                                    NEWS<span className="text-red-600">PORTAL</span>
-                                </span>
+                            <Link href="/" className="flex items-center" onClick={() => setMobileOpen(false)}>
+                                <img src="/logo5.png" alt="logo" className="h-12 w-auto object-contain" />
                             </Link>
                         </SheetTitle>
                         <SheetDescription className="sr-only">Navigation menu</SheetDescription>
