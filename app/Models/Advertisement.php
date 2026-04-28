@@ -5,8 +5,6 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Storage;
 
@@ -17,21 +15,11 @@ class Advertisement extends Model
     protected $fillable = [
         'title',
         'description',
-        'ad_type',
         'media_url',
         'media_type',
-        'embed_code',
         'redirect_url',
-        'cta_label',
-        'bg_color',
         'placement_type',
         'device_target',
-        'float_position',
-        'float_animation',
-        'popup_delay_seconds',
-        'popup_frequency_minutes',
-        'sticky_offset_px',
-        'ab_testing_enabled',
         'start_datetime',
         'end_datetime',
         'status',
@@ -41,19 +29,15 @@ class Advertisement extends Model
     ];
 
     protected $casts = [
-        'start_datetime'          => 'datetime',
-        'end_datetime'            => 'datetime',
-        'is_dismissible'          => 'boolean',
-        'ab_testing_enabled'      => 'boolean',
-        'priority'                => 'integer',
-        'impressions_count'       => 'integer',
-        'clicks_count'            => 'integer',
-        'popup_delay_seconds'     => 'integer',
-        'popup_frequency_minutes' => 'integer',
-        'sticky_offset_px'        => 'integer',
+        'start_datetime'   => 'datetime',
+        'end_datetime'     => 'datetime',
+        'is_dismissible'   => 'boolean',
+        'priority'         => 'integer',
+        'impressions_count'=> 'integer',
+        'clicks_count'     => 'integer',
     ];
 
-    protected $appends = ['media_full_url', 'ctr'];
+    protected $appends = ['media_full_url'];
 
     // ─── Relationships ──────────────────────────────────────────────────────────
 
@@ -62,28 +46,11 @@ class Advertisement extends Model
         return $this->belongsTo(User::class, 'created_by');
     }
 
-    public function impressions(): HasMany
-    {
-        return $this->hasMany(AdImpression::class);
-    }
-
-    public function clicks(): HasMany
-    {
-        return $this->hasMany(AdClick::class);
-    }
-
-    public function schedule(): HasOne
-    {
-        return $this->hasOne(AdSchedule::class);
-    }
-
-    public function variants(): HasMany
-    {
-        return $this->hasMany(AdVariant::class)->orderBy('label');
-    }
-
     // ─── Scopes ─────────────────────────────────────────────────────────────────
 
+    /**
+     * Only ads that are active and within their scheduled datetime window.
+     */
     public function scopeActive(Builder $query): Builder
     {
         $now = now();
@@ -97,11 +64,17 @@ class Advertisement extends Model
             });
     }
 
+    /**
+     * Filter by placement type.
+     */
     public function scopeForPlacement(Builder $query, string $placement): Builder
     {
         return $query->where('placement_type', $placement);
     }
 
+    /**
+     * Filter by device — matches the specific device OR 'all'.
+     */
     public function scopeForDevice(Builder $query, string $device): Builder
     {
         return $query->where(function (Builder $q) use ($device) {
@@ -109,24 +82,20 @@ class Advertisement extends Model
         });
     }
 
-    public function scopeOfType(Builder $query, string $type): Builder
-    {
-        return $query->where('ad_type', $type);
-    }
-
     // ─── Accessors ──────────────────────────────────────────────────────────────
 
     public function getMediaFullUrlAttribute(): ?string
     {
-        if (!$this->media_url) return null;
-        if (str_starts_with($this->media_url, 'http')) return $this->media_url;
-        return Storage::disk('public')->url($this->media_url);
-    }
+        if (!$this->media_url) {
+            return null;
+        }
 
-    public function getCtrAttribute(): float
-    {
-        if ($this->impressions_count === 0) return 0.0;
-        return round(($this->clicks_count / $this->impressions_count) * 100, 2);
+        // Already an absolute URL (e.g. external CDN)
+        if (str_starts_with($this->media_url, 'http')) {
+            return $this->media_url;
+        }
+
+        return Storage::disk('public')->url($this->media_url);
     }
 
     // ─── Helpers ────────────────────────────────────────────────────────────────
@@ -146,30 +115,10 @@ class Advertisement extends Model
         return $this->status === 'active';
     }
 
-    public function isHtmlBased(): bool
+    public function isScheduled(): bool
     {
-        return in_array($this->media_type, ['html', 'script']);
-    }
-
-    /**
-     * Select a variant by weighted random. Returns null when A/B is off.
-     */
-    public function selectVariant(): ?AdVariant
-    {
-        if (!$this->ab_testing_enabled) return null;
-
-        $variants = $this->variants;
-        if ($variants->isEmpty()) return null;
-
-        $totalWeight = $variants->sum('weight');
-        $random = mt_rand(1, max($totalWeight, 1));
-        $cumulative = 0;
-
-        foreach ($variants as $variant) {
-            $cumulative += $variant->weight;
-            if ($random <= $cumulative) return $variant;
-        }
-
-        return $variants->first();
+        return $this->status === 'active'
+            && $this->start_datetime !== null
+            && $this->start_datetime->isFuture();
     }
 }

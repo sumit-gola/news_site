@@ -148,14 +148,12 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'verified', 'role:ad
     Route::delete('media/{media}', [MediaController::class, 'destroy'])->name('media.destroy');
 
     // Advertisement Management
-    Route::get('advertisements',                                        [AdminAdvertisementController::class, 'index'])->name('advertisements.index');
-    Route::get('advertisements/analytics',                              [AdminAdvertisementController::class, 'analytics'])->name('advertisements.analytics');
-    Route::post('advertisements',                                       [AdminAdvertisementController::class, 'store'])->name('advertisements.store');
-    Route::put('advertisements/{advertisement}',                        [AdminAdvertisementController::class, 'update'])->name('advertisements.update');
-    Route::delete('advertisements/bulk',                                [AdminAdvertisementController::class, 'bulkDestroy'])->name('advertisements.bulk-destroy');
-    Route::delete('advertisements/{advertisement}',                     [AdminAdvertisementController::class, 'destroy'])->name('advertisements.destroy');
-    Route::patch('advertisements/{id}/restore',                         [AdminAdvertisementController::class, 'restore'])->name('advertisements.restore');
-    Route::patch('advertisements/{advertisement}/toggle-status',        [AdminAdvertisementController::class, 'toggleStatus'])->name('advertisements.toggle-status');
+    Route::get('advertisements', [AdminAdvertisementController::class, 'index'])->name('advertisements.index');
+    Route::post('advertisements', [AdminAdvertisementController::class, 'store'])->name('advertisements.store');
+    Route::put('advertisements/{advertisement}', [AdminAdvertisementController::class, 'update'])->name('advertisements.update');
+    Route::delete('advertisements/bulk', [AdminAdvertisementController::class, 'bulkDestroy'])->name('advertisements.bulk-destroy');
+    Route::delete('advertisements/{advertisement}', [AdminAdvertisementController::class, 'destroy'])->name('advertisements.destroy');
+    Route::patch('advertisements/{advertisement}/toggle-status', [AdminAdvertisementController::class, 'toggleStatus'])->name('advertisements.toggle-status');
 });
 
 // ── Authenticated Routes ──────────────────────────────────────────────────────
@@ -232,6 +230,6 @@ require __DIR__.'/settings.php';
 Route::middleware(['auth'])->get('/api/media', [ApiMediaController::class, 'index'])->name('api.media.index');
 
 // ── Public Advertisement API ──────────────────────────────────────────────────
-Route::get('/api/ads',             [AdvertisementController::class, 'fetch'])->name('api.ads.fetch');
-Route::post('/api/ads/impression', [AdvertisementController::class, 'impression'])->name('api.ads.impression')->middleware('throttle:60,1');
-Route::post('/api/ads/click',      [AdvertisementController::class, 'click'])->name('api.ads.click')->middleware('throttle:60,1');
+Route::get('/api/advertisements', [AdvertisementController::class, 'fetch'])->name('api.advertisements.fetch');
+Route::post('/api/advertisements/{advertisement}/impression', [AdvertisementController::class, 'trackImpression'])->name('api.advertisements.impression');
+Route::post('/api/advertisements/{advertisement}/click', [AdvertisementController::class, 'trackClick'])->name('api.advertisements.click');

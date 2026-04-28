@@ -8,11 +8,6 @@ use App\Models\Category;
 use App\Policies\AdvertisementPolicy;
 use App\Policies\ArticlePolicy;
 use App\Policies\CategoryPolicy;
-use App\Repositories\AdvertisementRepository;
-use App\Repositories\AdTrackingRepository;
-use App\Services\AdAnalyticsService;
-use App\Services\AdServingService;
-use App\Services\AdTrackingService;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
@@ -38,14 +33,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        // Repositories
-        $this->app->singleton(AdvertisementRepository::class);
-        $this->app->singleton(AdTrackingRepository::class);
-
-        // Services (depend on repositories above)
-        $this->app->singleton(AdServingService::class);
-        $this->app->singleton(AdTrackingService::class);
-        $this->app->singleton(AdAnalyticsService::class);
+        //
     }
 
     /**
