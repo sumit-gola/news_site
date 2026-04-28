@@ -8,6 +8,7 @@ import {
     LayoutDashboard,
     LayoutGrid,
     List,
+    Megaphone,
     MessageSquare,
     Newspaper,
     PenSquare,
@@ -193,13 +194,14 @@ function AdminNav({ pendingCommentsCount }: { pendingCommentsCount: number }) {
     const [commentsOpen, setCommentsOpen] = React.useState(url.startsWith('/admin/comments'));
 
     const items = [
-        { title: 'User Management',     href: '/admin/users',      icon: Users     },
-        { title: 'Roles & Permissions', href: '/admin/roles',      icon: Shield    },
-        { title: 'Articles',            href: '/admin/articles',   icon: Newspaper },
-        { title: 'Pages',               href: '/pages',            icon: FileText  },
-        { title: 'Categories',          href: '/categories',       icon: BookOpen  },
-        { title: 'Media Library',       href: '/admin/media',      icon: HardDrive },
-        { title: 'Settings',            href: '/settings/profile', icon: Settings  },
+        { title: 'User Management',     href: '/admin/users',             icon: Users      },
+        { title: 'Roles & Permissions', href: '/admin/roles',             icon: Shield     },
+        { title: 'Articles',            href: '/admin/articles',          icon: Newspaper  },
+        { title: 'Pages',               href: '/pages',                   icon: FileText   },
+        { title: 'Categories',          href: '/categories',              icon: BookOpen   },
+        { title: 'Advertisements',      href: '/admin/advertisements',    icon: Megaphone  },
+        { title: 'Media Library',       href: '/admin/media',             icon: HardDrive  },
+        { title: 'Settings',            href: '/settings/profile',        icon: Settings   },
     ];
 
     const activeCls = 'group/item h-9 gap-3 rounded-lg px-3 transition-all duration-150 ' +

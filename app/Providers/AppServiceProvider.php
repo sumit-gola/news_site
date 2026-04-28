@@ -2,8 +2,10 @@
 
 namespace App\Providers;
 
+use App\Models\Advertisement;
 use App\Models\Article;
 use App\Models\Category;
+use App\Policies\AdvertisementPolicy;
 use App\Policies\ArticlePolicy;
 use App\Policies\CategoryPolicy;
 use Carbon\CarbonImmutable;
@@ -21,8 +23,9 @@ class AppServiceProvider extends ServiceProvider
      * @var array
      */
     protected $policies = [
-        Article::class  => ArticlePolicy::class,
-        Category::class => CategoryPolicy::class,
+        Advertisement::class => AdvertisementPolicy::class,
+        Article::class       => ArticlePolicy::class,
+        Category::class      => CategoryPolicy::class,
     ];
 
     /**

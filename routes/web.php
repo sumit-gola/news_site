@@ -1,9 +1,11 @@
 <?php
 
+use App\Http\Controllers\Admin\AdvertisementController as AdminAdvertisementController;
 use App\Http\Controllers\Admin\CommentController as AdminCommentController;
 use App\Http\Controllers\Admin\MediaController;
 use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\AdvertisementController;
 use App\Http\Controllers\Api\MediaController as ApiMediaController;
 use App\Http\Controllers\ArticleController;
 use App\Http\Controllers\CategoryController;
@@ -144,6 +146,14 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'verified', 'role:ad
     Route::put('media/{media}', [MediaController::class, 'update'])->name('media.update');
     Route::delete('media/bulk', [MediaController::class, 'bulkDestroy'])->name('media.bulk-destroy');
     Route::delete('media/{media}', [MediaController::class, 'destroy'])->name('media.destroy');
+
+    // Advertisement Management
+    Route::get('advertisements', [AdminAdvertisementController::class, 'index'])->name('advertisements.index');
+    Route::post('advertisements', [AdminAdvertisementController::class, 'store'])->name('advertisements.store');
+    Route::put('advertisements/{advertisement}', [AdminAdvertisementController::class, 'update'])->name('advertisements.update');
+    Route::delete('advertisements/bulk', [AdminAdvertisementController::class, 'bulkDestroy'])->name('advertisements.bulk-destroy');
+    Route::delete('advertisements/{advertisement}', [AdminAdvertisementController::class, 'destroy'])->name('advertisements.destroy');
+    Route::patch('advertisements/{advertisement}/toggle-status', [AdminAdvertisementController::class, 'toggleStatus'])->name('advertisements.toggle-status');
 });
 
 // ── Authenticated Routes ──────────────────────────────────────────────────────
@@ -218,3 +228,8 @@ Route::middleware(['auth', 'verified', 'role:admin,manager,reporter'])->group(fu
 require __DIR__.'/settings.php';
 
 Route::middleware(['auth'])->get('/api/media', [ApiMediaController::class, 'index'])->name('api.media.index');
+
+// ── Public Advertisement API ──────────────────────────────────────────────────
+Route::get('/api/advertisements', [AdvertisementController::class, 'fetch'])->name('api.advertisements.fetch');
+Route::post('/api/advertisements/{advertisement}/impression', [AdvertisementController::class, 'trackImpression'])->name('api.advertisements.impression');
+Route::post('/api/advertisements/{advertisement}/click', [AdvertisementController::class, 'trackClick'])->name('api.advertisements.click');
