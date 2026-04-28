@@ -1,31 +1,30 @@
 import { X } from 'lucide-react';
 import * as React from 'react';
 import { AdRenderer } from '@/components/ads/AdRenderer';
-import { useAds } from '@/components/ads/useAds';
+import { canShowPopup, markPopupShown, useAds } from '@/components/ads/useAds';
 
 interface AdPopupProps {
-    /** Delay in ms before the popup appears. Default 3000 (3 s). */
-    delayMs?: number;
+    pageUrl?: string;
 }
 
 /**
- * Modal popup ad. Shows once per page session after a delay.
- * Only visible on desktop — mobile users are never shown intrusive popups.
+ * Modal popup ad. Respects popup_delay_seconds and popup_frequency_minutes.
+ * Only shown on desktop/tablet — never forces intrusive overlays on mobile.
  */
-export function AdPopup({ delayMs = 3000 }: AdPopupProps) {
-    const { ads, loading, device, dismissed, dismiss, trackImpression, trackClick } = useAds({ placement: 'popup' });
-
+export function AdPopup({ pageUrl }: AdPopupProps) {
+    const { ads, loading, device, dismissed, dismiss, trackImpression, trackClick } = useAds({ placement: 'popup', pageUrl });
     const [visible, setVisible] = React.useState(false);
 
-    const ad = ads.filter((a) => !dismissed.has(a.id))[0];
+    const ad = ads.filter((a) => !dismissed.has(a.id) && canShowPopup(a))[0];
 
-    // Show after delay — only on desktop
     React.useEffect(() => {
         if (!ad || loading || device === 'mobile') return;
-
-        const timer = setTimeout(() => setVisible(true), delayMs);
+        const timer = setTimeout(() => {
+            setVisible(true);
+            markPopupShown(ad.id);
+        }, (ad.popup_delay_seconds ?? 3) * 1000);
         return () => clearTimeout(timer);
-    }, [ad, loading, device, delayMs]);
+    }, [ad, loading, device]);
 
     const close = () => {
         setVisible(false);
@@ -42,24 +41,15 @@ export function AdPopup({ delayMs = 3000 }: AdPopupProps) {
             role="dialog"
             aria-label="Advertisement"
         >
-            <div
-                className="relative mx-4 w-full max-w-lg overflow-hidden rounded-2xl shadow-2xl"
-                onClick={(e) => e.stopPropagation()}
-            >
-                {/* Close button */}
-                <button
-                    onClick={close}
-                    aria-label="Close"
-                    className="absolute top-3 right-3 z-10 flex size-7 items-center justify-center rounded-full bg-black/60 text-white hover:bg-black/80 transition"
-                >
+            <div className="relative mx-4 w-full max-w-lg overflow-hidden rounded-2xl shadow-2xl" onClick={(e) => e.stopPropagation()}>
+                <button onClick={close} aria-label="Close" className="absolute top-3 right-3 z-10 flex size-7 items-center justify-center rounded-full bg-black/60 text-white hover:bg-black/80 transition">
                     <X className="size-4" />
                 </button>
-
                 <AdRenderer
                     ad={{ ...ad, is_dismissible: false }}
                     className="rounded-2xl"
-                    onImpression={() => trackImpression(ad.id)}
-                    onClick={() => { trackClick(ad.id); close(); }}
+                    onImpression={() => trackImpression(ad.id, ad.variant_label)}
+                    onClick={() => { trackClick(ad.id, ad.variant_label); close(); }}
                 />
             </div>
         </div>

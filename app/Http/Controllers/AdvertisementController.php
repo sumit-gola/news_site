@@ -3,16 +3,23 @@
 namespace App\Http\Controllers;
 
 use App\Models\Advertisement;
+use App\Services\AdServingService;
+use App\Services\AdTrackingService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
 class AdvertisementController extends Controller
 {
+    public function __construct(
+        private readonly AdServingService  $serving,
+        private readonly AdTrackingService $tracking,
+    ) {}
+
     /**
      * Fetch active ads for a given placement and device.
      *
-     * GET /api/advertisements?placement=header&device=desktop
+     * GET /api/ads?placement=header&device=desktop&page_url=...
      */
     public function fetch(Request $request): JsonResponse
     {
@@ -21,42 +28,47 @@ class AdvertisementController extends Controller
             'device'    => ['required', Rule::in(['desktop', 'tablet', 'mobile'])],
         ]);
 
-        $ads = Advertisement::active()
-            ->forPlacement($request->placement)
-            ->forDevice($request->device)
-            ->orderByDesc('priority')
-            ->get([
-                'id', 'title', 'description', 'media_url', 'media_type',
-                'redirect_url', 'placement_type', 'device_target',
-                'is_dismissible', 'priority',
-            ])
-            ->map(fn ($ad) => array_merge($ad->toArray(), [
-                'media_full_url' => $ad->media_full_url,
-            ]));
+        $ads = $this->serving->serve($request->placement, $request->device);
 
         return response()->json(['data' => $ads]);
     }
 
     /**
-     * Track an ad impression.
+     * Track an impression.
      *
-     * POST /api/advertisements/{ad}/impression
+     * POST /api/ads/impression
+     * Body: { ad_id: int, variant_label?: string, page_url?: string }
      */
-    public function trackImpression(Advertisement $advertisement): JsonResponse
+    public function impression(Request $request): JsonResponse
     {
-        $advertisement->incrementImpressions();
+        $request->validate([
+            'ad_id'         => ['required', 'integer', 'exists:advertisements,id'],
+            'variant_label' => ['nullable', 'string', 'in:A,B'],
+            'page_url'      => ['nullable', 'string', 'max:2048'],
+        ]);
+
+        $ad = Advertisement::findOrFail($request->ad_id);
+        $this->tracking->recordImpression($ad, $request, $request->variant_label);
 
         return response()->json(['ok' => true]);
     }
 
     /**
-     * Track an ad click.
+     * Track a click.
      *
-     * POST /api/advertisements/{ad}/click
+     * POST /api/ads/click
+     * Body: { ad_id: int, variant_label?: string, page_url?: string }
      */
-    public function trackClick(Advertisement $advertisement): JsonResponse
+    public function click(Request $request): JsonResponse
     {
-        $advertisement->incrementClicks();
+        $request->validate([
+            'ad_id'         => ['required', 'integer', 'exists:advertisements,id'],
+            'variant_label' => ['nullable', 'string', 'in:A,B'],
+            'page_url'      => ['nullable', 'string', 'max:2048'],
+        ]);
+
+        $ad = Advertisement::findOrFail($request->ad_id);
+        $this->tracking->recordClick($ad, $request, $request->variant_label);
 
         return response()->json(['ok' => true]);
     }

@@ -1,56 +1,81 @@
 import axios from 'axios';
 import * as React from 'react';
-import type { AdPlacement, Advertisement } from '@/types';
+import type { AdPlacement, AdServedDTO } from '@/types';
 
-type DeviceType = 'desktop' | 'tablet' | 'mobile';
+export type DeviceType = 'desktop' | 'tablet' | 'mobile';
 
-function detectDevice(): DeviceType {
+export function detectDevice(): DeviceType {
     const w = window.innerWidth;
     if (w < 768)  return 'mobile';
     if (w < 1024) return 'tablet';
     return 'desktop';
 }
 
+// ── Session-scoped caches (cleared on hard reload) ───────────────────────────
+const impressionsFired = new Set<number>();
+const adCache = new Map<string, { data: AdServedDTO[]; fetchedAt: number }>();
+const CACHE_TTL_MS = 60_000;
+
+// ── Popup frequency tracking (sessionStorage) ────────────────────────────────
+const POPUP_KEY = (id: number) => `ad_popup_last_shown_${id}`;
+
+export function canShowPopup(ad: AdServedDTO): boolean {
+    if (!ad.popup_frequency_minutes) return true;
+    const last = sessionStorage.getItem(POPUP_KEY(ad.id));
+    if (!last) return true;
+    const elapsedMs = Date.now() - parseInt(last, 10);
+    return elapsedMs >= ad.popup_frequency_minutes * 60_000;
+}
+
+export function markPopupShown(id: number): void {
+    sessionStorage.setItem(POPUP_KEY(id), String(Date.now()));
+}
+
+// ── Main hook ────────────────────────────────────────────────────────────────
+
 interface UseAdsOptions {
     placement: AdPlacement;
+    pageUrl?: string;
 }
 
 interface UseAdsResult {
-    ads: Advertisement[];
+    ads: AdServedDTO[];
     loading: boolean;
     device: DeviceType;
     dismissed: Set<number>;
     dismiss: (id: number) => void;
-    trackImpression: (id: number) => void;
-    trackClick: (id: number) => void;
+    trackImpression: (id: number, variantLabel?: string | null) => void;
+    trackClick: (id: number, variantLabel?: string | null) => void;
 }
 
-// Module-level impression tracking to fire each ad once per page session
-const impressionsFired = new Set<number>();
-
-export function useAds({ placement }: UseAdsOptions): UseAdsResult {
-    const [ads,      setAds]      = React.useState<Advertisement[]>([]);
-    const [loading,  setLoading]  = React.useState(true);
+export function useAds({ placement, pageUrl }: UseAdsOptions): UseAdsResult {
+    const [ads,       setAds]       = React.useState<AdServedDTO[]>([]);
+    const [loading,   setLoading]   = React.useState(true);
     const [dismissed, setDismissed] = React.useState<Set<number>>(new Set());
-    const [device] = React.useState<DeviceType>(detectDevice);
+    const [device]                  = React.useState<DeviceType>(detectDevice);
 
     React.useEffect(() => {
         let cancelled = false;
+        const cacheKey = `${placement}:${device}`;
+        const cached   = adCache.get(cacheKey);
+
+        if (cached && Date.now() - cached.fetchedAt < CACHE_TTL_MS) {
+            setAds(cached.data);
+            setLoading(false);
+            return;
+        }
+
         setLoading(true);
 
         axios
-            .get<{ data: Advertisement[] }>('/api/advertisements', {
-                params: { placement, device },
-            })
+            .get<{ data: AdServedDTO[] }>('/api/ads', { params: { placement, device } })
             .then(({ data }) => {
-                if (!cancelled) setAds(data.data);
+                if (cancelled) return;
+                adCache.set(cacheKey, { data: data.data, fetchedAt: Date.now() });
+                setAds(data.data);
             })
-            .catch(() => {
-                // Silently fail — no ads is fine
-            })
-            .finally(() => {
-                if (!cancelled) setLoading(false);
-            });
+            .catch(() => {})
+            .finally(() => { if (!cancelled) setLoading(false); });
 
         return () => { cancelled = true; };
     }, [placement, device]);
@@ -59,16 +84,15 @@ export function useAds({ placement }: UseAdsOptions): UseAdsResult {
         setDismissed((prev) => new Set(prev).add(id));
     }, []);
 
-    // Fire impression once per ad per page session (not persisted to localStorage)
-    const trackImpression = React.useCallback((id: number) => {
+    const trackImpression = React.useCallback((id: number, variantLabel?: string | null) => {
         if (impressionsFired.has(id)) return;
         impressionsFired.add(id);
-        axios.post(`/api/advertisements/${id}/impression`).catch(() => {});
-    }, []);
+        axios.post('/api/ads/impression', { ad_id: id, variant_label: variantLabel, page_url: pageUrl }).catch(() => {});
+    }, [pageUrl]);
 
-    const trackClick = React.useCallback((id: number) => {
-        axios.post(`/api/advertisements/${id}/click`).catch(() => {});
-    }, []);
+    const trackClick = React.useCallback((id: number, variantLabel?: string | null) => {
+        axios.post('/api/ads/click', { ad_id: id, variant_label: variantLabel, page_url: pageUrl }).catch(() => {});
+    }, [pageUrl]);
 
     return { ads, loading, device, dismissed, dismiss, trackImpression, trackClick };
 }
